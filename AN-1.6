@@ -1,0 +1,2354 @@
+Star is the fastest tar archiver for UNIX
+
+Star has many improvements compared to other tar 
+implementations (including gnu tar). See below for a short description
+of the highlight of star.
+
+Star is located on:
+
+ftp://ftp.berlios.de/pub/star
+
+Since Summer 2017, star offers more than 35 years of maintained service
+
+Note that this project includes a stripped down version of libschily.
+Do not try to link star dynamically against this library. If you like to link
+dynamically, get the "schily" project bundle from:
+
+ftp://ftp.berlios.de/pub/schily/
+
+that includes a complete libschily.
+
+Changes since star-1.5.3:
+
+		*** WARNING        ***
+		*** Need new smake ***
+
+	*** Due to the fact that schily-tools 2014-04-03 introduced to use new macro
+	*** expansions and a related bug fix in smake, you need a new smake
+	*** to compile this source. To ensure this, get a recent smake source and call
+	in the smake directory tree:
+
+	cd ./psmake
+	./MAKE-all
+	cd ..
+	psmake/smake
+	psmake/smake install
+
+
+WARNING: the last separate star release has been 1.5.3 and this release was
+published in 2014. Since then, frequent star updates have been available inside
+the "schilytools" tar ball.
+
+In case the "schily"-libraries are going to be installed as shared libraries,
+is highly recommended to install star from the "schilytools" bundle instead of
+using this star only archive. This is the only way to have the commonly used
+code always at a recent development state.
+
+	BUG WARNING: Please never report bugs to Linux distributions as they
+		usually do not forward these bug reports upstream and as the
+		Linux distributions typically do not let skilled people check
+		the bugs. We did not hear about a FIFO problem in star for a
+		long time and since the problem that (on Linux) occurred once
+		every 6000-10000 tries did not happen on Solaris after
+		10 million tries, it was not known otherwise.
+
+This changelog may not be complete; for a complete changelog, please ceck the
+changelog files from the schilytools. The changelog for the support libraries
+and the build system has been taken from the SCCS-5.09 release and thus misses
+the time-frame between October 1 2014 and May 21 2015.
+
+	Short overview for what changed since the last "stable" version:
+
+	-	Support for "infinitely" long path names has been added.
+
+	-	Support for base-256 numbers in timestams and uid/gid
+		has been added. This has been planned in the 1990s already,
+		when star invented the base-256 coding, but it has been
+		forgotten in favor of the POSIX.1-2001 enhanded archive
+		headers.
+
+	-	Support for comparing timestamps with nanosecond granularity
+
+	-	-secure-links has been made the default when extracting
+		archived (except when doing an incremental restore).
+
+	-	Added Support for NFSv4 ACLs on FreeBSD. Solaris has been
+		supported since 2013.
+
+	-	Added Support to archive SELinix attributes.
+
+	-	Allow to configure whether "star -fsync" is the default in
+		order to support filesystems that are slow with granted
+		transactions (like ZFS) or platforms that are genrally
+		slow with fsync() (like Linux).
+
+	-	Full UNICODE support has been added for tar headers.
+
+	-	A new option cli=name (must be argv[1]) allows to select all
+		supported command line interfaces (star, suntar, gnutar,
+		pax, cpio) when called as star.
+
+	-	Support for -zstd compression has been added.
+
+	-	Support for -lzma compression has been added.
+
+	-	Support for -freeze compression has been added.
+
+	-	Some rare FIFO problems have been fixed.
+		Note that we did recently run more than a billion tests to
+		verify the FIFO after we identified a method to trigger the
+		problem on Linux.
+
+	-	A set of unit tests have been added.
+
+
+/*--------------------------------------------------------------------------*/
+
+-	README.compile: added documentation on how to compile with clang
+
+-	README.compile: completely reworked
+
+-	READMEs/* updated
+
+-	"installman" and other new targets have been added to the makefile
+	system
+
+-	New make rules for the "Bitrig" BSD distro
+
+-	New make rules for the "Minix"
+
+-	New make rules to permit 32 and 64 bit compilations on AIX
+
+-	GCC makefile rules now all use the universal rule for 32 and 64 bit compilation
+
+-	Support for WIN-NT-6.x added (Win-DOS Server 2008 ... Win-DOS 10)
+
+-	Rules for the automated testing "make tests" added to the makefile system
+
+-	Rules for files names from versioned libraries have been added
+
+-	Rules for versioned libraries on Linux and NetBSD have been added
+
+-	Rules for OS400 have been added
+
+-	Rules for the enhanced SunPro Make have been added
+
+-	autoconf: Various new configure tests
+
+-	Schily Makefilesystem: Shared libraries now may have different numbers
+	than "1" as part of the file name if the related Makefile includes
+	definitions for SHL_MAJOR and SHL_MINOR. Plenty of RULES files have
+	been updated to make this change effective.
+
+	This is needed as we needed to introduce a binary incompatible libfind.
+	See libfind below. All libs used to be hardwired to the filename
+	"libxxx.so.1". Adding a SHL_MAJOR=2 to the shared library makefile
+	(see libfind/shlfind.mk) ressults in a "libfind.so.2".
+
+-	Schily Makefilesystem: Shared libraries for HP-UX are no longer only
+	*.sl files but *.sl.$(SHL_MAJOR) with a symlink from *.sl to
+	*.sl.$(SHL_MAJOR).
+
+-	Schily Makefilesystem: Before the locale envorinment is set to "C",
+	we now keep saved versions with the original content under OLD_LC_*
+
+-	inc/avoffset.c: workaround against a clang bug that causes core cumps
+
+-	sha3 support added to libmdigest
+
+-	include/schily/wait.h reworked
+
+-	include/schily/stdint.h & include/schily/utypes.h: added a workarounf for a
+	Solaris _CHAR_IS_SIGNED / _CHAR_IS_UNSIGNED Bug
+
+-	include/schily/stdio.h enhanced to include speed up code got getc() with
+	Solaris 64 bit compilations.
+
+-	New autoconf test for haiku posix/malloc.h
+
+-	New autoconf test for arpa/aixrcmds.h
+
+-	New autoconf test for tcgetsid()
+
+-	New autoconf test whether waitpid() supports NOWAIT
+
+-	New autoconf test whether we have d_type in struct dirent
+
+-	inc/align_test.c workaround for wrong "unused" GCC warning
+
+-	inc/getfp.c workaround for a address sanitizer bug
+
+-	include/schily: new files: getopt.h getopt.mk strar.h strar.mk
+
+-	include/schily/checkerr.h: Added E_ICONV
+
+-	include/schily/fcntl.h: Linux uses O_PATH instead of the POSIX O_SEARCH
+
+-	include/schily/find.h: various interface enhancements
+
+-	include/schily/getargs.h: various interface enhancements
+
+-	include/schily/maxpath.h: fixed some typos
+
+-	include/schily/mconfig.h: Added ASAN support 
+
+-	include/schily/stdint.h: Use a new macro for Two's complement machines
+	to avoid undefined C behavior
+
+-	include/schily/walk.h: various interface enhancements
+
+-	include/schily/values.h: new include file.
+
+-	include/schily/dbgmalloc.h: added more prototypes for libdbgmalloc.
+
+-	libschily/astoul.c added
+
+-	libschily/jsdprintf.c added
+
+-	libschily/movecbytes.c added
+
+-	libschily/cmpbytes.3 added
+
+-	libschily/cmpbytes.mk3 added
+
+-	libschily/fgtcomerr.c added
+
+-	libschily/format.h added
+
+-	libschily/fpoff.c added
+
+-	libschily/fstatat64.c added
+
+-	libschily/gtcomerr.c added
+
+-	libschily/gterror.c added
+
+-	libschily/gtprintf.c added
+
+-	libschily/matchmb.c added
+
+-	libschily/matchmbl.c added
+
+-	libschily/openat64.c added
+
+-	libschily/ovstrcpy.c added
+
+-	libschily/putenv.c added
+
+-	libschily/unsetenv.c added
+
+-	libschily/waitid.c added
+
+-	libschily/wctype.c added
+
+-	libschily/astoi.c and libschily/astoll.c now check for overflows
+	and report ERANGE
+
+-	libschily/*printf.c now support a locale dependent decimal separator
+
+-	libschily/format.c (the printf worker code) has been enhanced to
+	be faster with STDIO on most platforms.
+
+-	libschily: getargs, getallargs and getfiles man pages have been reworked
+
+-	libschily/getargs.c: combined single char boolean flags now work
+	with callback type formats.
+
+-	libschily/searchinpath.c added a new flag SIP_NO_STRIPBIN
+
+-	libschily::breakline() fixed a bug that caused the return code to be
+	larger than the number of array elements in some cases.
+
+-	libschily::checkerr() added new category "ICONV"
+
+-	libschily::comerr() A new environemtn variable "COMERR_EXCODE" disables
+	exit code mapping of codes that cannot be returned via the outdated
+	waitpid() call.
+
+-	libschily::opendir() added a missing nul byte for the Win32 opendir()
+	emulation
+
+-	libschily::format() the schily printf implementation now prints
+	floating point numbers in a POSIX compliant way.
+
+-	libschily::fnmatch() a new algorithm avoids recursion and is much
+	faster.
+ 
+-	libschily::fnmatch() Support for [:alpha:] and similar has been added.
+
+-	libschily::patmatch() Support for [:alpha:] and similar has been added.
+
+-	libschily: resolvenpath() did not work as expected when some path names
+	do not exist. A stat() call that should check whether we already
+	reached the "/" directory caused a return (-1) even with
+	(flags & RSPF_EXIST) == 0
+
+-	libschily: Fixed the behavior of the umask/chmod perm parser for the
+	case where "who" was not specified and the operator is '='. POSIX
+	requires here to first clear all bits in the old value before adding
+	new bits. The old implementation did clear only the bits retrieved
+	from umask(2).
+
+-	libschily: The umask/chmod perm parser now returns -1 for the mode
+	string "u", since the operator is missing. Before, it just printed an
+	error message but did not return -1.
+
+-	libschily: astoul() and astoull() now by default permit to prefix
+	the unsigned number by a "-". This is required by POSIX for strtoul()
+	and strtoull() and our implementation needs to be compatible to POSIX
+	to make the printf(1) implementation in the Bourne Shell POSIX
+	compatible on older platforms.
+
+	Thanks to Robert Elz for reporting
+ 
+-	libschily: emulations for *at() have been fixed.
+
+-	libschily/stdio/fgetstr.c now includes a speedup for AT&T stdio using
+	the new movecbytes()
+
+-	libschily/stdio/getdelim.c now includes a speedup for AT&T stdio using
+	the new movecbytes()
+
+-	libschily/ man pages reworked.
+
+-	libschily::format.c The schily printf is now able to do %.*s with
+	a significance > 8192 without overwriting the internal buffer.
+
+	The new code is implemented via strnlen() and no longer copies
+	the string - thus it should be even faster.
+
+-	libschily::fnmatch.c: added a forgotten fix (from last January) for 
+	a problem with missing brackets with if/then/else related to
+	[:upper:] and [:lower:]
+
+-	libschily::fnmatch.c:  added a forgotten _partial_ enhancement from
+	last January for [= ... =] and [. ... .] support.
+
+	Warning: this is not yet fully functional since the POSIX standard
+	does not include an interface to get this functionality from the
+	i18n part of libc.
+
+-	libschily::match.c: Added a missing /* FALLTHROUGH */ comment.
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	libschily::fstream.c: Added a /* NOTREACHED */ comment to make coverity
+	quiet.
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	libfind: the code now supports the *BSD enhancement "d_ino" in struct dirent.
+	This speeds up stat()less jobs.
+
+-	libfind: the code now supports the *BSD enhancement "d_type" in struct dirent.
+	This speeds up stat()less jobs.
+
+-	libfind: localization in libfind no longer affects the calling program
+
+-	libfind: Arguments containing a '=' character did result in the related
+	argument to become incremented inside the input arg vector. This caused
+	problems with a free() loop on the arg vector.
+
+	**********
+	Warning: the fix causes a binary incompatibility as the struct finda_t
+	changed it's size. As a result, we now install libfind.so.2 and changed
+	the map file in order to require newer versions of the interface
+	functions that are affected by the finda_t size change.
+	**********
+
+	Thanks to Heiko Eißfeldt for reporting.
+
+-	libfind: the -newer and -newerXY primaries now compare nanoseconds
+	as well.
+
+-	libfind: removed blank line in the linker map file
+
+-	libfind: the id cache (uid/gid <->name mapping) now helps star to find
+	whether a user name or group name is not completely 7 bit ASCII and
+	thus needs a locale conversion in star POSIX.1-2001 extended headers.
+
+-	libfind: Some open() calls now use O_DIRECTORY
+
+-	libfind: walk.c now uses fchdir() on platforms that support dirfd(DIR*)
+	and by this change, libfind is now aprox. 30% faster than before and
+	makes libfind faster than other find implementations.
+
+-	libfind: walk.c: "!isdot" has been renamed to "need_cd" for better
+	readability of the code.
+
+-	libfind: WALK_STRIPLDOT now strips even multiple occurences of "./" 
+	and if there is no text after that, it replaces the empty string by ".".
+
+-	libfind: new functions wstat() and wlstat() have been added (both are
+	based on fstatat()).
+
+-	libfind: treewalk() now works even without fa.walkflags |= WALK_CHDIR
+
+-	libfind: The code compiles again on platforms without dirfd(), like
+	e.g. DOS. On such a platform, there is currently however no way to
+	use libfind without WALK_CHDIR.
+
+-	libfind: Added a better ENAMETOOLONG discovery for the function
+	dopendir() that is able to open a directory with a very long name.
+
+-	libfind: In case of very long path names, the intermediate directories
+	are now opened with O_SEARCH instead of O_RDONLY.
+
+-	libfind/bsh/Bourne Shell: The "long" stat() implementation now works
+	with absolute path names as well.
+
+-	libfind: added support for a new feature: -call allows to do calls into
+	the shell that started "find" as a builtin program. This is approx.
+	40x faster than using -exec.
+
+-	libfind: A new function walkcwd() allows to chdir() back from the start
+	directory (that has been reached by calling walkhome()) to the
+	directory where the treewalker has been before calling walkhome().
+
+-	libfind: new source ptime.c
+
+-	libfind: new source version.h
+
+-	libfind: the major file name version number was bumped from 2 to 3
+	since the new code causes binary incompatibility with the previous
+	libfind.
+
+-	libfind: A set of new primiary operators has been added:
+
+	-newerat
+	-newerct
+	-newermt
+
+	These primaries allow to check whether a file is newer than a time
+	stamp description in it's argument. The argument to this primary
+	is a date and time description that is similar to ISO 8601.
+
+	The time description may look like:
+
+                  yyyy-mm-ddThh:mm:ss.nnnnnnnnn+-zzzz
+
+	for a time with timezone or
+
+                  yyyy-mm-ddThh:mm:ss.nnnnnnnnnZ
+
+        for GMT based time or
+
+                  yyyy-mm-ddThh:mm:ss.nnnnnnnnn
+
+        for local time.
+
+	The 'T' may be replaced by a space. The description may be shortened
+	from the right side, in this case the missing fields are assumed to 
+	have the maximum value. It can be shortened from the left side and in
+	that case, the missing fields are substituted by the current date.
+
+	The call
+
+		find . -newermt 2017
+
+	will find all files with a modification time with the start of 2018
+	or newer.
+
+	The call
+
+		find . -mewermt T
+
+	will check for files that have a modification time of the start of
+	tomorrow or newer.
+
+-	libfind: The "-perm +mode" feature before has been recognised if the
+	+ sign appeared before any character from  the set "ugoa", but since
+	the string "+u" represents a POSIXly valid "permcopy" operation, the
+	new version of libfind only accepts this specific feature if the
+	mode string starts with a "a". Since (with find) the start value of
+	the perm parser is 0, any valid mode string may be prefixed by "a+,"
+	without changing the resulting value, the feature is usable with
+	"-perm +a+,mode".
+
+-	libfind: The phrase "-perm /mode" has been added as an alias for
+	"-perm +mode", but since "/" is not permitted in a POSIX mode string,
+	this methos does not require to prefix the mode string with "a+," to
+	work. "-perm /mode" also helps to give comptibility with GNU find.
+
+-	libfind: "-chmod mode" no longer causes a wrong treatment in some
+	cases as the special treatment for "-perm +mode" no longer applies
+	to -chmod too.
+
+-	libfind: new function find_strvers() returns the version string.
+
+-	libfind: version bumped to 1.7
+
+-	libfind: treewalk() now supports a new flag WALK_MOUNTPLUS.
+
+	This new flag reports mount points but does not descend into them.
+
+	The existing flag WALK_MOUNT does not report mount points and does
+	not descend into them.
+
+	The background for this change is:
+
+	1)	"star -cM ..." and "star -c -find . -xdev ..." differ
+		in their behavior and there was no way to get the
+		star -M behavior from libfind.
+
+	2)	The POSIX standard for "find -xdev ..." is in conflict
+		with the documented behavior for "find -xdev ..." on
+		UNIX and with the documented and POSIX standard behavior
+		of nftw() with the FTW_MOUNT flag (The UNIX find(1) 
+		implementation is based on nftw()).
+
+	3)	There is a general need to have the other behavior where
+		mount points are reported.
+
+-	libfind: find(1) gets a new primary operator "-mount+" as a
+	supplement to the historic UNIX "-mount" behavior that is based
+	on WALK_MOUNT. -mount+ is based on WALK_MOUNTPLUS
+
+-	libfind: Added a date to the -version output and added version.h
+
+-	libfind/star/mkisofs/bsh/Bourne Shell: "find -xdev" is no longer
+	UNIX compatible but rather POSIX compatible.
+
+	*** Incompatible change ***
+	*** POSIX wording from 1992 is in conflict with UNIX implementation ***
+
+	Background: POSIX in 1992 introduced a wording for -xdev that was in
+	conflict with existing implementations and required a behavior that
+	is impossible to implement with nftw(3).
+
+	Today, half of the implementations follow the UNIX rules and half of
+	the implementations follow the POSIX text.
+
+	To solve the conflict, POSIX decided to add the old UNIX "find -mount"
+	(that was intended as an alias to "find -xdev") and to be implemented
+	with the old UNIX behavior and requires "find -xdev" to follow the
+	POSIX text from 1992. At the same time, POSIX introduced a new nftw(3)
+	flag FTW_XDEV as a complement to FTW_MOUNT with the behavior that
+	matches the POSIX requirements for "find -xdev".
+
+	As a result, libfind now makes -xdev an alias to -mount+ and keeps
+	the -mount primary with the old behavior. The difference is:
+
+	-mount	does not lists mount points at all and does not descend
+		into them.
+
+	-xdev	lists directories that are mount points but does not
+		descend into these directories.
+
+-	libfind: walkcwd() no longer tries to call dirfd() unless it exists or
+	DIR->dd_fd exists.
+
+	This should make it compile with DJGPP again.
+
+-	libfind: the time parser now supports the new time spec "now" for
+	the current time.
+
+-	libfind: The new primaries -chatime, -chctime, -chmtime allow to
+	set the time stamps in struct stat to arbitrary values.
+
+-	libfind: A new primaries -chfile allows to set the modified struct
+	stat values from -chown, -chgrp, -chmod, -chatime, -chctime, -chmtime
+	to the file.
+
+	On platforms where chmod() is not possible on a symbolic link, symbolic
+	links are skipped with that change.
+
+	On platforms where it is not possible to set times on symbolic links,
+	symbolic linkes are skipped with that change.
+
+-	libfind: Added support for being able to use simple shell scripts
+	(scripts that do not start with a #! line) as commands for the
+	-exec and -exec + primaries.
+
+	This requires a reordering of the arg vector and to insert a "sh"
+	as new argv[0] before the original arguments.
+
+-	libfind: added a new timestamp to the libfind version.
+
+-	libfind::find.c: Added a missing /* FALLTHROUGH */ comment.
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	libdeflt: avoid a double fclose(dfltfile)
+
+-	librmt: a new function rmtrsh() has been added to set up a different
+	method to initiate a remote connection. This allows to tell librmt
+	to make connections with "ssh" instead of using "rcmd()" or "rsh".
+
+	Thanks to a hint from Kristýna Streitová <kstreitova@suse.com>
+ 
+-	librmt: a new function rmtrmt() has been added to set up a different
+	path to the remote rmt server program. This allows to tell librmt
+	to make connections to servers that are on a path other than "/etc/rmt".
+ 
+-	librmt: The man pages have been enhanced.
+
+
+-	Fixed a bug in star's pax CLI that caused spax -X to dump core.
+	Thanks to Pavel Raiskup for reporting.
+
+-	The programs cdrecord, star and cdda2wav adopt to the recent Haiku
+	changes with a randomized address space and now use B_EXACT_ADDRESS
+	instead of B_ANY_ADDRESS for the clone_area() call to get shared memory
+	for a FIFO.
+
+-	star now again stores up tp 16 bytes for uname in the old star
+	archive format - not null terminated in case all bytes are used.
+
+-	star -diff now correctly deals with the non null-terminated uname/gname
+	strings from the old star archive format.
+
+-	mkisofs and star have also been corrected to use
+	S_IFCTG and S_ISCTG instead of the S_IFCNT and S_ISCNT
+
+-	star now flushes the verbose file stream before checking for missing
+	links. This tries to avoid mixed output when people call
+		star  2>&1 | tee
+
+-	star: avoid a warning from GCC-4.8.3
+
+-	star/acltext.c: fixed a memory leak in case that malloc() failed
+	in acltotext().
+	Thanks to heiko Eißfeldt for reporting.
+
+-	Star now supports "star -copy -find /from ... /to"
+	Thanks to a report from Stéphane Chazelas. A minor piece of code
+	was forgotten when the final -find integration did take place.
+
+-	Star now supports "-C directory" before a -find option. This allows to
+	call e.g.:
+		star -copy -C /from/path -find . /to/path
+
+	and thus permits to avoid long path prefixes to be copied into the
+	/to/path hierarchy.
+
+-	Star now calls setlocale() and thus correctly supports -find -name
+	with multibyte locales.
+	Thanks to a report from Stéphane Chazelas.
+
+-	star: Manpage now mentions star_sym and tartest in the SEE ALSO section
+
+-	Star: star in "-dump" mode and when using the FIFO did overwrite the 
+	tar header for a file with the POSIX.1-2001 extended tar header for
+	efficiency. This unfortumately did overwrite data that was later 
+	used by:
+
+		star -c -dump -vv
+
+	for the verbose listing and caused username/groupname to be "root".
+	We no longer allocate the PTB from the FIFO buffer in this case and
+	introduce a minor performance penalty when using "star -c -vv".
+
+-	Star: now calling strlcpy() instead of strcpy() when copying CPIO
+	file names as CPIO has no checksum and may observe rotten archives.
+	Thanks to Hanno Böck for the report.
+
+-	Star: Only check CPIO-BIN filenames for swapped bytes when the filename
+	would fit into a 512 byte header. Cpio officially only support 256 bytes
+	in the filename. In theory 65k is possible but with star -no-fifo,
+	we only have 10k to check.
+	Thanks to Hanno Böck for the report.
+
+-	Star: Abort with CPIO-BIN archives when the symlink target name size is
+	seen as a number <= 0 in the cpio header. This avoids a core dump from
+	rotten CPIO archives.
+	Thanks to Hanno Böck for the report.
+
+-	Star: When using the outdated signed checksums, star could incorrectly
+	assume that a block o characters that sums up to 0 is an EOF block.
+	Star now defines such a block as a potential EOF block and repeats the
+	the computation using unsigned chars to verify whether it really is
+	an EOF block.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: Avoid to read cpio file names and link names that are longer
+	than PATH_MAX.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: check for EOF while trying to read long TAR filenames.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: avoid to access the name field in the historical tar header.
+	This could cause directories not to be recognized because the 
+	name field could be non-null terminated.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: try to avoid accessing data from outside the uname/gname fields
+	in case a broken tar archive is used. Star now inserts a null byte at the
+	end to prevent str*() functions to scan the data with probably no end.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: try to avoid data from outside a tar header while looking for an
+	octal number in a field that does not contain the expected characters.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: In list mode, use longer character arrays to convert the
+	link count, uname and gname. The linkcount array did miss the
+	space for a space character.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: Abort when a CPIO archive claims to havea zero sized filename.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: star -i no longer tries to access memory before the file name
+	array when the file name field starts with a nul byte.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: Check whether the devminorbits value is reasonable to avoid
+	an array out of bound read access.
+	Thanks to Heiko Eißfeldt for the report.
+
+-	Star: remove a left over debug printf in create.c that was inserted
+	while fixing the star -dump -vv bug in schilytools-2016-06-28.
+
+-	Star: The man page now includes a link to the star sources.
+
+-	Star: Add support for NFSv4 ACLs on FreeBSD based on a patch from
+	Martin Matuska <martin@matuska.org>
+
+-	star: Linux xattrs are now set after chown() as Linux resets xattrs
+	with a chown() call.
+	Thanks to Kristýna Streitová <kstreitova@suse.com>
+
+-	star: fixed a typo in star.4
+
+-	star: The string conversion from the POSIX.1-2001 extended header
+	SCHILY.filetype has been speed up with a string length table.
+
+-	star: fixed a bug with star -r and star -u that could cause star to
+	use the wrong offset for appending to the archive which then created
+	an unappendable archive.
+	Thanks to Steffen Nurpmeso <steffen@sdaoden.eu> for reporting.
+
+-	star: A workaround in star for a SSH TCP-IP problem seen on Linux in
+	2003 is now disabled by default but may be activated by setting the
+	environment STAR_WORKAROUNDS=ssh-tcpip
+
+-	star: The man page now documents that ZFS and other COW filesystems
+	slow down in extract mode by the star default of calling fsync(fd)
+	for every file.
+
+-	star: the README files in the directory testscripts now mention
+	sourceforge instead of berlios.
+
+-	star: a first version of a test suite has been added
+
+-	star: testscripts 
+
+-	star: table.c & table.h: changed some tables from signed char
+	to uint8_t as the values are used as index for other tables.
+
+-	star: The NFSv4 ACL format was redesigned following a proposal from
+	Martin Matuska <martin@matuska.org> from FreeBSD.
+
+	The new format omits the '-' signs in the output from
+
+		acl_totext(aclp, ACL_COMPACT_FMT | ACL_APPEND_ID | ACL_SID_FMT);
+
+	to save space in order to be able to hold more ACL entries in a
+	single 512 byte block. This change actually permits most files to have
+	all meta data inside a single 512 byte block with extended TAR data.
+
+-	star: star.1 Now uses 4-digit year numbers for the last changed date
+
+-	star: star.4 Now uses 4-digit year numbers for the last changed date
+
+-	star: star.4 documents the new ACL format for NFSv4 ACLs.
+
+-	star: The conformance tests that check the star -tv behavior now set
+	the timezone to GMT to get a test result that does not depend on the
+	configured timezone of the system.
+
+	Thanks to Heiko Eißfeldt for reporting
+
+-	tartest fixed some GCC warnings for unused variables.
+
+-	TARGETS/55star_sym added a newline to make "make tinfo" work when
+	/bin/sh is not a classical Bourne Shell. The code worked before because
+	there was a bug in the classical Bourne Shell with sh -ce cmd.
+
+	Thanks to Heiko Eißfeldt for reporting
+
+-	star: added a missing '{' in commented out code.
+
+	Thanks to Heiko Eißfeldt for reporting
+
+-	Star (pax): Option parsing is now done in a POSIX compliant way.
+	Before, pax did not permit calls like "pax -vffile".
+
+	This is the first step in making star's pax implementation
+	to pass the POSIX certification.
+
+-	star: Added a new extended header: SCHILY.devminorbits
+	This is needed because Solaris uses a different makedev() for 64 bit
+	commands and 32 bit commands.
+
+	The new SCHILY.devminorbits allows to convert struct stat.st_dev
+	as used by SCHILY.dev into a number that is compatible to the system
+	used by the local program. Note that SCHILY.dev is currently not
+	used in extract mode, but a value in the archive that does not fit
+	into the local dev_t type was flagged by star. This caused a warning
+	like this:
+	
+	star: WARNING: SCHILY.dev '124554051655' in extended header at 3 exceeds local range.
+
+	when the archive created by a 64 bit star on Solaris was fed into
+	a 32 bit star.
+
+	Ad a result, tar archives from 64 bit star binaries and 32 bit star
+	binaries are now compatible.
+
+-	include/schily/device.h: XDEV_T is now Ullong. This file was forgotten
+	to distribute with schilytools-2017-10-10. The change is however needed
+	for a bugfix in "star".
+
+-	star: When in list or diff mode on an "exustar" typed archive, star did
+	believe a hardlinked symlink is both hardlink and symlink but only the
+	hardlink target is present in the archive. We thus only list or compare
+	the hardlink now.
+
+-	star: When star is in interactive extract mode, it now asks for file
+	removal in case that the attempt to create a new file returns ELOOP.
+	This helps to extract archives that change the current symlink
+	structure and that may result in an intermediate endless symlink loop.
+
+-	star: Avoiding a warning from the HP-UX K&R compiler
+
+-	star: A problem in btrfs on Linux may cause stat.st_blocks == 0 for
+	huge files that start with a big hole and end with data. While this
+	seems to be a bug in btrfs (stat.st_blocks has been reported to
+	become != 0 later), there is the theoretical case where a huge hole
+	is followed by data that may fit in compressed form into the "inode"
+	and legally result in stat.st_blocks == 0.
+
+	We thus disabled the F_ALL_HOLE test. A modern filesystem should
+	implement support for SEEK_HOLE, for performance reasons. Note that
+	SEEK_HOLE exists since 13 years already. An operating system or
+	filesystem that today does not support SEEK_HOLE must be seen as
+	outdated.
+
+-	star/pax.c: Removed a leftover debug print statement that was added in
+	September 2017 while adding support for the POSIX option parser
+	requirement that the last character in a combined option string may
+	have an argument.
+
+	Thanks to Leah Neukirchen for reporting.
+
+-	star: Fixed some typos
+
+	Thanks to Leah Neukirchen for reporting.
+
+-	star: we now add a null byte past a possible tar checksum in the first
+	header while trying to find out which archive type is in use.
+
+	This avoids useless warnings: "WARNING: Unterminated octal number at..."
+	with cpio archives. The bug and the message have been introduced in
+	July 2016.
+
+-	star: 64 new unit tests for archive autodetection have been added
+
+-	star: star_fat.mk has been enhanced to import newer content from
+	Makefile
+
+-	star: star.mk has been enhanced to import newer content from
+	Makefile
+
+-	star: cpiohdr.c and the star man page have been modified to explain
+	that the CPIO CRC archive format uses a 32-bit checksum and no CRC.
+
+-	star: A new message "Badly formed number '%s'.\n" has been introduced to
+	help to identify illegal arguments to complex options like fs=.
+
+-	star: The man page has been enhanced in order to reduce the chance
+	to missunderstand descriptions.
+
+-	star: We now better check for the results of an ignored SIGTTIN
+
+	Thanks to Robert Clausecker for reporting.
+
+-	star: star -diff is now able to compare nanoseconds in timestamps.
+	This requires a tar archive with full POSIX.1-2001 extended tar
+	header extensions. If the archive does not include sub-second
+	resolution, star -diff implements a silent fallback to what previously
+	has been done: just compare the seconds.
+
+-	various files: as a side effect of the new nanosecond resolution in
+	smake and star, many files in this distribution did get an updated
+	CDDL header with an additional URL
+
+		http://www.opensource.org/licenses/cddl1.txt
+
+-	star: Since 1985, star by default only extracts files from an
+	archive if they are newer than the file on disk. The check whether
+	files in the archive are newer than in the filesystem has been
+	extended. Star now checks nanoseconds as well when in extract mode
+	in case the archive contains timestamps with sub-second resolution.
+
+	Warning: since historic tar archives store timestamps only with
+	second resolution, extrating such an archive results in files that
+	have the nanoseconds of the timestamps set to 0. If you later extract
+	another archive with POSIX.1-2001 extenden headers that include
+	nanosecond timestamps, all files on disk are considered to be older
+	than the same files in the archive and thus extracted again.
+
+	Note that since an incremental back usually takes much longer than a
+	second, star currently still only compares seconds in the timestamps
+	of files when deciding whether a file is put into an incremental
+	backup. Files that have been created with the same second timestamp
+	as the start of the last incremental are included in the next
+	incremental, so no file is lost because of this decision.
+
+-	star: The nanosecond handling in append mode has been verified and
+	the related comment has been enhanced.
+
+-	star: "star -c -newer ..." now checks nanoseconds as well.
+
+-	star: Added a new archive format "epax". This is the same as "pax",
+	but it always includes a POSIX.1-2001 extended header with timestamps
+	with nanosecond resolution.
+
+-	star: Better comment in unicode.c
+
+-	star.c: unicode.c is now based on iconv() to permit other locale encodings
+	than ISO-8859-1
+
+-	star: The POSIX.1-2001 extended header keyword hdrcharset=BINARY now
+	works.
+
+-	star: When in copy mode, star now uses hdrcharset=BINARY to avoid charset
+	conversion problems.
+
+-	star: Now using version 1.5.4
+
+-	star: user name, group name, path and linkpath are now automatically
+	added to the POSIX.1-2001 extended header in case that they include
+	non-ASCII characters (outside the 7-bit range).
+
+-	star: if mtime is negative, mtime is too large for a POSIX.1-1988
+	TAR header or if nanoseconds are non-null and the archive format
+	supports POSIX.1-2001 extended headers, the times are now always
+	recorded in an extended header. This is a requirement from newer
+	POSIX versions.
+
+-	star: Since the probability for creating POSIX.1-2001 x-headers
+	did raise, we cannot make assumptions anymore just from the existence
+	of an x-header. While doing archive format detection, star is no longer
+	happy with a 'x' or 'g' header to decide that an archive is in
+	"exustar" format but requires a SCHILY.archtype keyword.
+
+-	star: The fifo is now using a better autoconfiguration in order to
+	prevent it to try to use shmget() on DOS. This makes star compile 
+	with DJGPP.
+
+-	star: a new option (-pax-o) has been added. This currently only 
+	implelents the flag "binary" that tells star to add a field
+	hdrcharset=BINARY to the extended headers.
+
+-	star: better comment in Makefile
+
+-	star: fixed an ununitialized finfo.f_flags in flush_link()
+
+	Thanks to Martin Liska from Suse for reporting
+
+-	star: updated the mail addresses in the man pages.
+
+-	mt: updated the mail addresses in the man pages.
+
+-	rmt: updated the mail addresses in the man pages.
+
+-	star: add $(LIB_ICONV) to the Makefile
+
+-	star: man pages no longer have star(4/5) in the SEE ALSO section but
+	star(4), so the automatic links from man2html(1) work.
+
+-	star: the function has_dotdot() that checks for dangerous filenames
+	that contain ../../ which has been written 15 years ago (as the first
+	tar archiver to make this security check), now also checks for ..\..
+	attacks on Cygwin and other DOS based platforms.
+
+-	star: added a check for the exit code from the compress rogram. This
+	helps to detect certain problems and to make star exit != 0 in such a
+	case. The current code is based on siginfo_t. This is a "new" feature
+	that has been introduced by SVr4 in 1989 and that has been standardized
+	by SUSv1 in 1995. So it needs an OS platform that is actively
+	maintained after the period 1989/1995.
+
+	Thanks to a hint from Kristýna Streitová <kstreitova@suse.com>
+
+-	star: A hard EOF on the input now causes star to exit with a non-zero
+	exit code. This is a fallback method to grant a non-zero exit code
+	on platforms with an unmaintained kernel (such as Linux) where still
+	no working waitid()/siginfo_t exists even though the feature has been
+	introduced in 1989 (29 years ago).
+
+-	star: The Makefile now contains a #define "USE_SSH" to compile in
+	a new default to make remote tape connections using the ssh protocol
+	by default instead of the previous "rsh".
+
+	Thanks to a hint from Kristýna Streitová <kstreitova@suse.com>
+
+-	star: A new option rsh=path has been added to specify a different
+	remote login program on the command line.
+
+	WARNING: since the new default for star is to use "ssh", users that
+	rely on the speed of a rcmd() connection need to either put an empty
+	RSH= variable into the environment or need to specify rsh='' on the
+	star command line.
+
+-	star: A new option rmt=path has been added to specify a different
+	path to the remote tape server program on the command line.
+
+	Since star defaults to the UNIX default path "/etc/rmt", for the server
+	at the remote side, and since most /etc/rmt implementations are
+	dangerous in case that the OS on server and client differ, it is
+	recommended to put "RMT=/opt/schily/sbin/rmt" into the environment or
+	to specify "rmt=/opt/schily/sbin/rmt" on the star command line.
+
+-	star: The environment STAR_FSYNC=N may establish a default in star
+	that enables -no-fsync by default in order to prevent star from being
+	slow on a platform with inefficient buffer cache (like Linux) or on
+	transactional copy on write filesystem like ZFS.
+
+	Note that on Solaris with UFS, the performance degradation from using
+	the reliable mode (and issuing fsync()) is much less than 10%, while on
+	Linux with the UFS clone EXT4, the performance degradation is 400%.
+
+	If this fsync()-less default is enabled, star is always faster than other
+	archivers that never had such a check, but may no longer detect whether a
+	file could not be extracted correctly, since not all problems can be
+	flagged in the close() return code.
+	
+
+-	star: The entry STAR_FSYNC=N in /etc/default/star may establish a 
+	default in star were -no-fifo is enabled by default.
+
+-	star: A new option -do-fsync may reverse the default from the
+	STAR_FSYNC=N environment or from /etc/default/star.
+
+-	rmt: the man page has been enhanced.
+
+-	rmt: the comment in the program has been enhanced.
+
+-	tartest: Some warnings that have been printed to stderr are now on stdout
+	to make them all appear in the same file.
+
+-	star_sym: added the O_DIRECTORY openflag
+
+-	star::pathname.c: New function strlcpy_pspace() helps to implement
+	path names of arbitrary length more efficient.
+
+-	star::pathname.c: make the realloc() implementation more correct
+	with respect to all return possible codes specified by POSIX.
+
+-	star::unicode.c: iconv() results are now terminated with a '\0' byte
+
+-	star::unicode.c: _from_utf8() now honors "fromlen". This is needed
+	for the new POSIX.1-2001 extended header handling.
+
+-	star::subst.c: The code has been rewritten to use strlcpy() instead of
+	strncpy().
+
+-	star::subst.c: The code no longer uses the result path storage for
+	getting the result from Y/N questions.
+
+-	star::subst.c: -s'/from/to/g' did only substitute once, while
+	-s'/from/to&/g' did work as expected.
+
+-	star::subst.c: There is no longer any limitation on the length of the 
+	path as long as there is sufficient memory for malloc().
+
+-	star::subst.c: The path name read function has been rewritten to use
+	getdelim().
+
+-	star::buffer.c Added a new error message in checkerrs() for a buffer
+	overflow in path name substitution.
+
+-	star::dirtime.c: new function flushdirtimes() allows to flush the dir
+	stack as a callback from the comexit() procedure.
+
+-	star::dirtime.c: the code is now able to handle file names with
+	unlimited length even though the low level calls to utimes() and chmod()
+	still may result in an ENAMETOOLONG.
+
+-	star::pathname.h: This file now is also able to work in case stdio.h has
+	not been included before.
+
+-	star: added several functions as callback for comexit() to give better
+	messages when star is terminated by severe problems.
+
+-	star: the man page now prints the star magic 'tar\0' in bold chars.
+
+-	star: The archive type tests have been adopted to the slightly different
+	output format in case of errors. We now print buffer statistics in
+	such a case.
+
+-	star: The first stage of code rework for unlimited path len has been
+	implemented for the "extract" case (list, extract, diff, append). The
+	code may still cause an ENAMETOOLONG error.
+
+	The next planned stages:
+
+	-	Make "star -c -find . ..." able to archive path names of
+		arbitrary length.
+
+	-	Add methods to avoid ENAMETOOLONG in extract or diff mode.
+
+	-	Make "star -c . ..." able to archive path names of
+		arbitrary length.
+
+	-	Make Make "star -c . ..." as fast as "star -c -find . ..."
+
+-	star: SELinux support has been added. The related code is based on code
+	that was most likely written by
+
+		Daniel Walsh <dwalsh@redhat.com>
+
+	The code has been reported to the star team by
+
+		Kristýna Streitová <kstreitova@suse.com>
+
+	Note that the new code correctly clears inherited SELinux attributes
+	for files that haveno such attributes in the archive. So it is
+	important to upgrade.
+
+-	star: the SELinux support was revised with feedback from
+	Pavel Raiskup <praiskup@redhat.com>
+
+-	star: star -version on Linux now prints:
+
+	star: star 1.5.4 (x86_64-unknown-linux-gnu)
+
+	Options: acl-POSIX.1e-draft find fflags remote Linux-xattr SELinux
+
+	and make it visible whether there is SELinux support compiled in.
+
+-	star: a typo in acl_unix.c has been fixed. This typo could in
+	rare situations cause a buffer overflow as the wrong strlen() was
+	checked.
+
+	Thanks to Pavel Raiskup <praiskup@redhat.com> for reporting
+
+-	star: converted the code in preparation for a localization.
+	star now calls the new gt*() functions wit builtin gettext()
+	call for the format string.
+
+	This has been done for most cases by a #define GT_COMERR
+	and #define GT_ERROR
+
+	In some special cases, there are calls to gtprintf() and fgtprintf().
+
+-	Shells & star long pathname enhancements:
+
+		These enhancements have been implemented in a way that
+		they do not affect the behavior with pathnames shorter
+		than PATH_MAX.
+
+		If a very long path name is encountered, things become
+		slow since this typically results in hopping over a dozen
+		or more single openat() calls.
+
+		Star may have general problems as a result from new dynamic
+		path name storage handling.
+
+		Star did not yet replace all static path name stuff by
+		dynamic path handling but the typical usage should be covered
+		by the current state. What is missing is support for
+		-install, file unlinking and file renaming.
+
+		Star may have problems with long path names under some
+		rare conditions.
+
+-	star: new functions lchdir() & lgetcwd() have been added for dealing
+	with very long path names with the -C option.
+
+-	star: the option list= is now implemented using getdelim() and thus
+	supports to read arbitrary path name length from files or stdin.
+
+-	star: volhdrs are now without a PATH_MAX limit.
+
+-	star: added a new function _lgetinfo() that always does an lstat()
+	independent of -L and -h. This is needed in order to check whether
+	a filesystem object exists and needs to be deleted before extraction.
+
+-	star: line reading functions that deal with the inode database in
+	"star-symtable" in the incremental restore code now support arbitrary
+	line length.
+
+-	star: the "remove" code now supports to remove file system trees of
+	arbitrary depth and path length.
+
+-	star: incremental restores, in case they are not run as root, could
+	under some rare cases (nearly full target filesystem) when inode
+	numbers are reused faster than usual, result in "permission denied"
+	errors while extracting files.
+
+	This happened when such a reused inode has no write permission for
+	the owner. A similar case with changing file type has been fixed
+	in February 2005 as the only bug that ever appeared in star's
+	incremental backup/restore system fater incrementals have been
+	introduced in September 2004. Since February 2005, we remove files
+	with a different type before we create new ones.
+
+	As we previously assumed that incremental restores are always run
+	as root, this permission problem did never cause any harm in the
+	past. This is since root is allowed to create files in readonly
+	directories and since root can write into readonly files.
+
+	We now first run a chmod() +w on directories and files with no
+	write permissions before we extract the content.
+
+	This modification now allows star to be used for private backups
+	and restores without the need to become root for the task.
+
+-	star_sym: Added a new function osmode() because restore.c now
+	needs this function because of the above change and we do not like
+	to add star_unix.c to star_sym.
+
+-	star: Previously, star needed the option -force-restore in order to
+	restore partial dumps. A new option -partial now allows partial
+	restores without at the same time permitting dump level mismatches
+	or reference date mismatches.
+
+-	star: star -Hgnutar now also creates long path names. GNU tar-1.30
+	started to create long path names under some conditions, even though
+	it is unable to extract archives with long path names. Our archives
+	thus are not more challenging to GNU tar than archives created
+	by GNU tar itself ;-)
+
+-	star: mention the GNU tar long path name problem in the man page.
+
+-	star: mktemp() destroys it's argument even when it fails because
+	of ENAMETOOLONG. We need to save and restore the original name
+	argument to make our long path workaround working.
+
+-	star: "star -x -install ..." now works with very long path names
+	as we have a mktemp() workaround for long path names.
+
+-	star: Long names using the pre-POSIX long pathname header method now 
+	works since the related extraction routine in longname.c now manages
+	dynamic path store as well.
+
+-	star: extraction with symlink emulation (that creates copies) now also
+	supports long path names.
+
+-	star: incremental restores now support long path names.
+
+-	star: "star -c" (without "-find") is now able to handle long
+	path names. This is the final change to make star a fully long path
+	name supporting program.
+
+-	star: star_unix.c: a new function getinfoat() has been added.
+	It uses fstatat() if this function supported by the current platform
+	and not emulated in libschily.
+
+-	star: "star -c" now uses fstatat() via getinfoat() if possible.
+	This causes a 30% performance win in case of "star -c -onull" and
+	makes "star -c" now nearly as fast as "star -c -find".
+
+-	star: pathname.c: New function clear_pspace()
+
+-	star: star -xattr now aborts with an error message that -xattr
+	is reserved for NFSv4 xattrs and that Linux needs -xattr-linux
+
+-	star long path name state report:
+
+	-	All known places that previously used static path name store
+		or system calls directly have been converted to use dynamic
+		path storage and long path name aware functions. This has been
+		extended to any place (even those locations that never reach
+		ENAMETOOLONG) in order to be able to verify the correctness
+		of the change via "nm".
+
+	-	Most long path name features work even on older platforms if
+		at least fchdir() is supported, so this does not need a very
+		recent platform.
+
+	-	Hard links between long path names only work on platforms
+		that natively support the linkat() system call.
+
+	-	The code is not yet optimized for good performance and is
+		currently approx. 30% slower when long paths (> PATH_MAX) are
+		actually used.
+
+-	star: using -xattr now only prints a hint on -xattr-linux in case
+	that this happens on a platform that does not support NFSv4 Extended
+	Attribute files, e.g. Linux.
+
+-	star: using -xattr on a platform with NFSv4 Extended Attribute files
+	now prints that this feature is not yet supported in star.
+
+-	star: Release 2018-07-16 caused star not to compile anymore on Mac OS X.
+	This is because sys/xattr.h on Linux and sys/xattr.h on Mac OS X are
+	very similar but incompatible.
+
+	A first quick fix, was to disable Linux xattr support in case that
+	XATTR_NOFOLLOW is defined (which is part of the incompatibility).
+
+	Since things did look simple, we now support these simple xattr method
+	on Mac OS X as well.
+
+-	star: Release 2018-07-16 introduced a bug in the diff code that caused
+	star to dump core while comparing symbolic links. Since the symlink
+	target name cannot be longer than PATH_MAX, we are now using a static
+	path buffer again in this case.
+
+-	star: The routines that read Y/N answers now use fgetstr() instead of
+	fgetline() in order to detect a buffer overrun.
+
+	In case of an overrun, we now read until a newline is seen, in order to
+	get a new sane start for the next question.
+
+-	star: New file version.c include a datefield besides the version
+	number.
+
+-	star: The star archive format man page has been updated to match the
+	current state.
+
+-	star: The archive format detection for the XUSTAR format now also
+	checks for base 256 numbers in atime/ctime.
+
+-	bsh/Bourne Shell/star: a very long path name could cause a core dump
+	with a "chdir()" operation in some cases, as there was no check for
+	pointer != NULL when restoring the '/' character while hopping over
+	parts of the path name.
+
+	Thanks to Heiko Eißfeldt for reporting.
+
+-	star: "star -c H=exustar -pax-o binary" now correctly results in
+	unencoded strings for uname/gname/path/linkpath. There was preliminary
+	code for the -copy mode but the final changes for this binary mode
+	have been forgotten. This was caused by a change of a variable name 
+	from "copyflag" to "binflag" in May 2018.
+
+	WARNING: If you created archives during the past three months using the
+	option "-pax-o binary", you definitely need to recreate the archives
+	in case there are non-ascii characters in values for the named 
+	keywords.
+
+-	star: The code to set the time stamp for extracted files has been
+	changed to correctly deal with symbolic links.
+
+	In former times, time stamps for symlinks have not been set at all
+	as there was n way to do that.
+
+	Later, with the availability if utimensat() This could be done for
+	symlinks as well, if the target systen supports utimensat().
+
+	Recently, the code was rearranged to always use utimensat(), but
+	to use an emulation on older systems. This resulted in sometimes
+	setting the timestamp of the symlink target instead of the
+	symlink, depending on how the emulation could be implemented.
+
+	The new code knows how the emulation is done and avoids to set
+	the times for the symlink targets on older platforms where the
+	emulation does not (cannot) support to set the time of symlinks.
+
+	Thanks to Stephane Chazelas for reporting.
+
+-	star: star -x -to-stdout no longer tries to set the "not extracted"
+	file to Jan 1 1970 in case of an extraction error.
+
+-	star: The option -secure-links has been made the default except when
+	extracting dumps with the -restore option.
+
+	The reason for that change is that a handcrafted tar archive could
+	first include a symlink with absolute target name, e.g. x -> /etc
+	and then include a file x/passwd that would be extracted using 
+	the 'x' link to result in /etc/passwd.
+
+	Our solution with -secure-links is the same since 20 years: do not
+	extract the problematic symlink and as a result, the later file 
+	will be extracted into the local directory tree.
+
+-	star: a new option -no-secure-links allows to disable the secure
+	default behavior.
+
+-	star: Added a new help output to the error statistics in case that
+	a file has been skipped because it contains /../ or when a symbolic
+	link has been skipped because it points to an absolute path or
+	because the symlink target contains /../. This help-text mentions
+	the options -.. and -secure-links respectively.
+
+-	star: the archive format man page now correctly explains that in 
+	BINRAY mode, the values for uname/gname/path/linkpath are not 
+	coded in UTF-8.
+
+-	star: The README file now mentions very long path names and
+	uses recent mail addresses
+
+-	star: the function getpriv() has been renamed to getpaxpriv()
+	since a function getpriv() is part of libc on OS400.
+
+	Thanks to Jack Woehr for reporting
+
+-	libfind/star/mkisofs/bsh/Bourne Shell: "find -xdev" is no longer
+	UNIX compatible but rather POSIX compatible.
+
+	*** Incompatible change ***
+	*** POSIX wording from 1992 is in conflict with UNIX implementation ***
+
+	Background: POSIX in 1992 introduced a wording for -xdev that was in
+	conflict with existing implementations and required a behavior that
+	is impossible to implement with nftw(3).
+
+	Today, half of the implementations follow the UNIX rules and half of
+	the implementations follow the POSIX text.
+
+	To solve the conflict, POSIX decided to add the old UNIX "find -mount"
+	(that was intended as an alias to "find -xdev") and to be implemented
+	with the old UNIX behavior and requires "find -xdev" to follow the
+	POSIX text from 1992. At the same time, POSIX introduced a new nftw(3)
+	flag FTW_XDEV as a complement to FTW_MOUNT with the behavior that
+	matches the POSIX requirements for "find -xdev".
+
+	As a result, libfind now makes -xdev an alias to -mount+ and keeps
+	the -mount primary with the old behavior. The difference is:
+
+	-mount	does not lists mount points at all and does not descend
+		into them.
+
+	-xdev	lists directories that are mount points but does not
+		descend into these directories.
+
+-	star: changed the members of struct dumpdates to have the prefix dd_ in
+	all members.
+
+-	star: Enhanced the comment in fifo.c and fifo.h
+
+-	star: Added "volatile" to a selection of struct members in struct m_head.
+	This should help to avoid specific optimization from newer compilers
+	that could cause problems with the synchronization of the fifo.
+
+-	star: added new flag members (eflags & pflags) to struct m_head to make
+	sure that the probability of changing too much with &= and |= operators
+	in only a single flag word is reduced. We added:
+
+	eflags	for flags that are only used in preparation of an exit
+
+	pflags	for flags that are modified only by the put side of the FIFO
+		when doing changes at unpredictive time slots.
+
+-	star: make sure that "star -c" results in a non-zero exit code if it
+	is interupted by ^C.
+
+	Note that star catches ^C in order to avoid to create defective tar
+	archives (similar to a GNU tar bug) in such a case, but previously 
+	behaved like SunOS tar that finishes with the current file, writes
+	a correct EOF record to the archive and then exits  with 0.
+
+	The star exit code in case of a ^C with star -c is -4.
+
+-	star: Added new code to allow to debug a hanging FIFO.
+
+	If the FIFO hangs, use "ps -efc| grep star" to find the two process
+	IDs for the two star processes and then call:
+
+		kill -RTMAX <pid1>
+		kill -RTMAX <pid2>
+
+	and report the output that appears after sending this signal to both
+	processes.
+
+-	star: the path name length and the link name length are now set from
+	the POSIX 2001 extended tar headers in case that a name appears in that
+	extended meta data. This may speed up thigs that need to know the path
+	name length.
+
+-	star: Star now retrieves the current working directory in extract mode.
+	If this fails, it is not seen as a severe error and star continues to
+	work.
+
+-	star: the behavior for links in the default case (with
+	-secure-links active) has been made more user friendly.
+
+	Star now only flags links that point outside the current working
+	directory. This makes all tar extractions in default mode safe as long
+	as they are done inside an empty diretory.
+
+-	star: various Cstyle changes
+
+-	star: documented the new primaries -chatime, -chctime, -chmtime
+
+	These primaries allow to archive files with aribitrary time stamps.
+
+	If you e.g. like to archive all files with the current time, use:
+
+		star -c -find . -chmtime now
+
+-	star: A typo in the function dolchmodat() has been fixed. The bug has been
+	introduced in July 2018 while adding support for very long path names.
+
+	dolchmodat() is needed/used when a platform uses different file mode
+	bits than defined by POSIX. In this case, the fix allows to compile
+	star with DJGPP again.
+
+-	star: added a new timestamp to the star version.
+
+-	star: The man page now mentions incremental backups and restores in the
+	FEATURES section.
+
+-	smt: smt -wready now checks whether the last open really failed before
+		retrying the open operation.
+
+		Thanks to Pavel Raiskup for reporting this coverity result.
+
+-	star: hole.c: A memory leak in in hole.c::put_sparse() has been fixed.
+
+		Thanks to Pavel Raiskup for reporting this coverity result.
+
+-	star: xheader.c: the macro scopy() no longer has a semicolon at the end.
+
+		Thanks to Pavel Raiskup for reporting this coverity result.
+
+-	star: added support for auto detection of "zstd" compressed archives.
+
+-	star: added a new option -zstd to support compression and uncompression
+	using the program "zstd".
+
+-	star: Recently, star did hang in the FIFO code on Solaris. This did
+	not happen on Solaris over 20 years before...
+
+	On Linux - on fast multi CPU machines - the probability that a
+	child process from fork() starts up before the parent is 1000x higher
+	than on Solaris, where 10 million tries were needed to reproduce the
+	same problem.
+
+	As a result, the FIFO in star on Linux could in rare cases (1 of 
+	~ 10000 tries) even finish the 1st read() from the input file before
+	the "tar"-process starts with e.g. command lines like "star -tv" or 
+	"star -x". Since star introduced auto-byte-order detection and handling
+	in 1985, star needs a special start up sequence to do that.
+
+	Star introduced the FIFO in the late 1980s and the machines from that
+	time did always restart the parent before the fork()ed child starts.
+	The new OS behavior thus caused a situation that was not forseeable
+	when the FIFO has been designed. This new OS behavior caused a
+	deadlock in aprox. 1 of 10000 star calls on Linux and 1 of 10000000
+	star calls on Solaris.
+
+	Star now waits when entering the FIFO fill-process until the 
+	FIFO get-process did start up before trying to wake up a waiting
+	get process.
+
+-	star: On Linux, in 1 of 1.5 million tries, star did die from SIGPIPE.
+	Note that this did never happen on Solaris.
+
+	Star now ignores SIGPIPE and it seems that this fixed the problem
+	since it did not happen again after that change with even 100 million
+	tries.
+
+-	star: The debug printing for the FIFO has been enhanced to print more
+	information from the FIFO control structure to make it easier to debug
+	problems like the ones mentioned above.
+
+-	star: There seems to be a problem in pipe handling in the Linux kernel.
+	It seems that in rare cases, the read(2) on a pipe returns 0 even though
+	the write side did write(2) one byte to the pipe just before calling
+	exit(). Unfortunately, this problem is hard to debug as it happens only
+	once every ~30 million tries. Our workaround is to behave as if the
+	expected byte could be read and star currently prints something like:
+
+		star: Erfolg. Sync pipe read error pid 8141 ret 0
+		star: Erfolg. Ib 0 Ob 1 e 0 p 1 g 0 chan 5.
+		star: Erfolg. Trying to work around Kernel Pipe botch.
+
+	before it continues. Since the star exit code in such a case is 0,
+	we assume that this is a correct workaround and this case thus may
+	be made completely silent in the future.
+
+-	star: an even less frequent FIFO problem (occurs once every 50 million
+	tries on fast multi CPU machines) has been identified. Star reports a
+	hard EOF on input even though the complete file with logical EOF has
+	been read and there is still input to process. In order to debug this
+	problem a debug message has been added to the code.
+
+	With this debug message, it turned out, that this problem happened
+	because a context switch occurred in the FIFO read process after it did
+	see an empty FIFO and later, after the process was resumed, the
+	following check for the FIFO_MEOF flag did see EOF. We now first check
+	for the FIFO_MEOF flag and later for the amount of data inside as the
+	FIFO as FIFO_MEOF is set after the FIFO content has been updated and
+	thus a context switch is no longer able to cause a wrong assumption
+	about the content of the FIFO.
+
+	If you still see this, please send a report.
+
+-	star: added support to print debug malloc statistics to better debug
+	memory problems in star.
+
+-	star: pathname.c:: free_pspace() now only frees the path buffer if it
+	is != NULL
+
+-	star: fixed a bug in the file create.c that caused star to incorrectly
+	grow the path buffer by 2 bytes for every archived file. This caused
+	star to constantly grow if a larger amount of files are archived and
+	eat up all memory available to 32 bit processes if the archived
+	filesystem is larger than approx. 1 TB.
+
+-	star: If the path name now cannot be handled because of low memory,
+	we print a warning that includes the text "out of memory".
+
+-	star: Now checking whether open of /dev/null failed while running a
+	compress pipe. This avoids a core dump on defective OS installations.
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	star: props.c: Added a missing /* FALLTHROUGH */ comment. 
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	star: create.c: Add more comment for the CPIO CRC format handler to
+	explain why the last instance if a series of hard links for a file
+	needs to archive the data.
+
+-	star: diff.c: added a filling fillbytes(&finfo, ...) to make sure that
+	ACL pointers are initialized.
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	star: Several /* NOTREACHED */ comments have been added to tell
+	programs like coverity that after a NULL pointer check, there is no
+	continuation of the program
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	star: extract.c: A if (path->ps_path == '\0') has been corrected to
+	if (path->ps_path[0] == '\0') after a mktemp() call. This was a typo
+	introduced with the new support for extremely long path names.
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	star: extract.c An initalization for a struct pathstore has been
+	moved to the front to verify that path.ps_path is always initialized.
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	star: header.c: isgnumagic(&ptb->dbuf.t_vers) has been changed to
+	isgnumagic(ptb->ustar_dbuf.t_magic) as it is a "ustar" structure
+	that is going to be checked.
+
+	Thanks to Pavel Raiskup for poiting to a related Coverity message.
+
+-	star: some Cstyle changes
+
+-	star: another similar problem has been fixed already in the 2019-01-22
+	release:
+
+	An even less frequent FIFO problem (occurs once every 50 million
+	tries on fast multi CPU machines) has been identified. Star reports a
+	hard EOF on input even though the complete file with logical EOF has
+	been read and there is still input to process. In order to debug this
+	problem a debug message has been added to the code.
+
+	With this debug message, it turned out, that this problem happened
+	because a context switch occurred in the FIFO read process after it did
+	see an empty FIFO and later, after the process was resumed, the
+	following check for the FIFO_MEOF flag did see EOF. We now first check
+	for the FIFO_MEOF flag and later for the amount of data inside as the
+	FIFO as FIFO_MEOF is set after the FIFO content has been updated and
+	thus a context switch is no longer able to cause a wrong assumption
+	about the content of the FIFO.
+
+	We now did run 250 million tests without seeing another problem.
+
+	If you still see this, please send a report.
+
+-	star: Note that the debug output for this problem now has been
+	disabled. If you need to debug this, call:
+
+		smake clean COPTX=-DFIFO_EOF_DEBUG all
+
+	in the star directory.
+
+-	star: The message "Sync pipe read error" is no longer printed when
+	the FIFO background process dies instead of sending a final wakeup.
+	This is needed since there is a possibility for a context switch in
+	the foreground process that can make it later wait for a wakeup while
+	the background process misses to see the wait flag and just exits.
+
+-	star: In rare conditions (once every 2 million tries), a hang could 
+	occur with "star -c" if the tar process fills the FIFO and sets the
+	EOF flag and then calls wait() to wait for the FIFO tape output
+	process. This happens in case that the tape output did not see the
+	EOF flag because it has undergone a context switch after it checked
+	for the not yet existing EOF flag and before waiting for a wakeup
+	from the tar FIFO fill process.
+
+	Star now closes the sync pipes before calling wait() as this always
+	wakes up the waiting other side.
+
+	We did run another 300 million tests for this condition and did not
+	see any problem now.
+
+-	makefile system: A new file include/schily/type_val.h has been added to
+	allow to use TYPE_MINVAL(), ... without a need to
+	#include <schily/inttypes.h>
+
+-	makefile system: include/schily/limits.h now contains some
+	XXX_MAX/XXX_MIN fallbacks in case the related defintions are missing
+	in the system include file of the current OS.
+
+-	star: Support for base-256 numbers in timestams and uid/gid has been
+	added. This has been planned in the 1990s already, when star invented
+	the base-256 coding, but it has been forgotten in favor of the
+	POSIX.1-2001 enhanded archive headers. Now it seems that GNU tar 
+	that copied the format from star uses it for timestamps and uid/gid
+	and we need to implement it in order to get archive compatibility.
+
+	Thanks to Michal Górny (mgorny@gentoo.org) for detecting the missing
+	feature.
+
+-	star: The t_rdev field in the old star header now may use base-256
+	as well.
+
+-	star: The function stoli() added a new parameter "fieldwidth" that
+	allows to configure when a "unterminated octal number" warning is
+	printed. This is needed since this function is used for 8 byte and
+	for 12 byte fields.
+
+-	star: star did print archives with illegal 32 byte user/group 
+	names (where the nul terminator is missing) "correctly", when in 
+	list mode but it used only the first 31 bytes when extractig 
+	such archives
+
+-	star: a new function istarnumber() is used to do better heuristics on
+	what a valid TAR archive is. We have some special handling to work 
+	around the non-compliance of GNU tar in some known cases. If you
+	discover other GNU tar archives that are not detected as TAR archive,
+	please report them to help to make th eheuristics better.
+
+	The background is to make star better in detecting fool archives.
+
+-	star: The directory testscripts added new files:
+
+	testscripts/not_a_tar_file1 and testscripts/not_a_tar_file3
+
+	with correct checksums that fool tar implementations that use too
+	few heuristics to identify tar archives.
+
+-	star: fixed a bug in the FIFO related to extracting multi-volume
+	archives. The bug was introduced with release 2019-02-18 and the
+	effect was that the FIFO complained at the end of the last volume.
+
+-	star/libschily: Added new error checking codes:
+
+	"ID"	allows to control error behaviour with range errors in uid_t
+		and gid_t values.
+
+	"TIME"	allows to control error behaviour with range errors in time_t
+
+-	star: Creating multi volume archives without using the FIFO did dump
+	core. We thus no longer set mp->chreel = TRUE; when the FIFO has 
+	been disabled. The related bug has been introduced in January 2012.
+
+-	star: Creating multi volume archives with a very small volume size
+	could cause a hang at the end as the function startvol() did not
+	check whether the TAR process did already decide to exit while
+	waiting for the TAR process to calm down (stop) before writing the
+	next multi volume header. We no longer wait in this case.
+
+-	star: exprstats() now calls fifo_exit(ret) in order to avoid a
+	FIFO Sync pipe read error message in case that star was terminated
+	with an error.
+
+-	star: Since we added better Unicode support in May 2018, star did
+	dump core when a multi volume header with POSIX.1-2001 extensions
+	was written in multi volume create mode. We now check for NULL
+	pointers before we call nameascii() to decide whether the file 
+	name needs a UTF-8 translation.
+
+-	star: Creating multi volume archives without POSIX.1-2001 support
+	no longer sets POSIX.1-2001 extension flags for the volume header.
+
+-	star: The flag XF_NOTIME now works when creating POSIX.1-2001
+	extended headers and thus the 'x'-header with time stamps for the
+	volume header tar header is no longer created. This avoids
+	to write atime=1 for the volume number 1 since we encode the
+	volume number in the otherwise useless atime of the volume header
+	when in POSIX.1-1988 TAR mode.
+
+-	star: the star.1 man page now mentions that the first tar program
+	appeared in 1979 (3 years before star has been started as a project).
+
+-	star: the star.4 man page now has a "SEE ALSO", a HISTORY and
+	a AUTHOR section.
+
+-	star: the star.4 man page now has a MULTI VOLUME ARCHIVE HANDLING
+	section.
+
+-	star: the star.4 man page added a new "BASIC TAR STRUCTURE" section.
+
+-	star: The ACL reference test archives (formerly available from e.g.:
+		http://sf.net/projects/s-tar/files/alpha/) have been added
+	to the directory star/testscripts/. The files 
+
+	acl-test.tar.gz
+	acl-test2.tar.gz
+	acl-test3.tar.gz
+	acl-test4.tar.gz
+	acl-test5.tar.gz
+
+	contain ACLs that use the obsolete method from a POSIX proposal
+	from around 1993 that was withdrawn in 1997 and never has become
+	part of a standard. This method has been implemented in 1993 for
+	UFS on Solaris.
+
+	GNU tar claims to support this format but really does not support
+	it at all. GNU tar fails to extract the reference tar archives from
+	above and it fails to create a compliant tar archive in create mode.
+	It is strange to see that GNU tar never has been tested against the
+	reference archives that have been created in collaboration with
+	SuSE in 2001 already.
+
+	The files
+
+	acl-nfsv4-test.tar.gz
+	acl-nfsv4-test2.tar.gz
+	acl-nfsv4-test3.tar.gz
+	acl-nfsv4-test4.tar.gz
+	acl-nfsv4-test5.tar.gz
+
+	contain ACLs that have become part of the NFSv4 standard and that 
+	are also used on NTFS and ZFS. This format is completely unsupported
+	by GNU tar.
+
+-	star TODO: create unit tests in order to avoid future problems
+	with multi volume archives similar to the problems we recently
+	fixed.
+
+-	makefile system: A new file include/schily/type_val.h has been added to
+	allow to use TYPE_MINVAL(), ... without a need to
+	#include <schily/inttypes.h>
+
+-	makefile system: include/schily/limits.h now contains some
+	XXX_MAX/XXX_MIN fallbacks in case the related defintions are missing
+	in the system include file of the current OS.
+
+-	star: Support for base-256 numbers in timestams and uid/gid has been
+	added. This has been planned in the 1990s already, when star invented
+	the base-256 coding, but it has been forgotten in favor of the
+	POSIX.1-2001 enhanded archive headers. Now it seems that GNU tar 
+	that copied the format from star uses it for timestamps and uid/gid
+	and we need to implement it in order to get archive compatibility.
+
+	Thanks to Michal Górny (mgorny@gentoo.org) for detecting the missing
+	feature.
+
+-	star: The t_rdev field in the old star header now may use base-256
+	as well.
+
+-	star: The function stoli() added a new parameter "fieldwidth" that
+	allows to configure when a "unterminated octal number" warning is
+	printed. This is needed since this function is used for 8 byte and
+	for 12 byte fields.
+
+-	star: star did print archives with illegal 32 byte user/group 
+	names (where the nul terminator is missing) "correctly", when in 
+	list mode but it used only the first 31 bytes when extractig 
+	such archives
+
+-	star: a new function istarnumber() is used to do better heuristics on
+	what a valid TAR archive is. We have some special handling to work 
+	around the non-compliance of GNU tar in some known cases. If you
+	discover other GNU tar archives that are not detected as TAR archive,
+	please report them to help to make th eheuristics better.
+
+	The background is to make star better in detecting fool archives.
+
+-	star: The directory testscripts added new files:
+
+	testscripts/not_a_tar_file1 and testscripts/not_a_tar_file3
+
+	with correct checksums that fool tar implementations that use too
+	few heuristics to identify tar archives.
+
+-	star: fixed a bug in the FIFO related to extracting multi-volume
+	archives. The bug was introduced with release 2019-02-18 and the
+	effect was that the FIFO complained at the end of the last volume.
+
+-	star/libschily: Added new error checking codes:
+
+	"ID"	allows to control error behaviour with range errors in uid_t
+		and gid_t values.
+
+	"TIME"	allows to control error behaviour with range errors in time_t
+
+-	star: Creating multi volume archives without using the FIFO did dump
+	core. We thus no longer set mp->chreel = TRUE; when the FIFO has 
+	been disabled. The related bug has been introduced in January 2012.
+
+-	star: Creating multi volume archives with a very small volume size
+	could cause a hang at the end as the function startvol() did not
+	check whether the TAR process did already decide to exit while
+	waiting for the TAR process to calm down (stop) before writing the
+	next multi volume header. We no longer wait in this case.
+
+-	star: exprstats() now calls fifo_exit(ret) in order to avoid a
+	FIFO Sync pipe read error message in case that star was terminated
+	with an error.
+
+-	star: Since we added better Unicode support in May 2018, star did
+	dump core when a multi volume header with POSIX.1-2001 extensions
+	was written in multi volume create mode. We now check for NULL
+	pointers before we call nameascii() to decide whether the file 
+	name needs a UTF-8 translation.
+
+-	star: Creating multi volume archives without POSIX.1-2001 support
+	no longer sets POSIX.1-2001 extension flags for the volume header.
+
+-	star: The flag XF_NOTIME now works when creating POSIX.1-2001
+	extended headers and thus the 'x'-header with time stamps for the
+	volume header tar header is no longer created. This avoids
+	to write atime=1 for the volume number 1 since we encode the
+	volume number in the otherwise useless atime of the volume header
+	when in POSIX.1-1988 TAR mode.
+
+-	star: the star.1 man page now mentions that the first tar program
+	appeared in 1979 (3 years before star has been started as a project).
+
+-	star: the star.4 man page now has a "SEE ALSO", a HISTORY and
+	a AUTHOR section.
+
+-	star: the star.4 man page now has a MULTI VOLUME ARCHIVE HANDLING
+	section.
+
+-	star: the star.4 man page added a new "BASIC TAR STRUCTURE" section.
+
+-	star: The ACL reference test archives (formerly available from e.g.:
+		http://sf.net/projects/s-tar/files/alpha/) have been added
+	to the directory star/testscripts/. The files 
+
+	acl-test.tar.gz
+	acl-test2.tar.gz
+	acl-test3.tar.gz
+	acl-test4.tar.gz
+	acl-test5.tar.gz
+
+	contain ACLs that use the obsolete method from a POSIX proposal
+	from around 1993 that was withdrawn in 1997 and never has become
+	part of a standard. This method has been implemented in 1993 for
+	UFS on Solaris.
+
+	GNU tar claims to support this format but really does not support
+	it at all. GNU tar fails to extract the reference tar archives from
+	above and it fails to create a compliant tar archive in create mode.
+	It is strange to see that GNU tar never has been tested against the
+	reference archives that have been created in collaboration with
+	SuSE in 2001 already.
+
+	The files
+
+	acl-nfsv4-test.tar.gz
+	acl-nfsv4-test2.tar.gz
+	acl-nfsv4-test3.tar.gz
+	acl-nfsv4-test4.tar.gz
+	acl-nfsv4-test5.tar.gz
+
+	contain ACLs that have become part of the NFSv4 standard and that 
+	are also used on NTFS and ZFS. This format is completely unsupported
+	by GNU tar.
+
+-	star TODO: create unit tests in order to avoid future problems
+	with multi volume archives similar to the problems we recently
+	fixed.
+
+-	star_sym: added forgotten man page
+
+-	autoconf/configure: Added a workaround for a Mac OS X linker bug.
+	configure now always uses "rm -rf conftest*" instead of just
+	"rm -f conftest*" to avoid error messages from the stray *.dSYM
+	and sometimes persistent directories created by the Apple linker.
+
+-	Makefile system: The rules for creating HTML files from man pages
+	now set the troff variable "h" to 1. This is used by the SCCS
+	man pages (e.g sccs-prs.1) to be able to let a wide table start
+	at column 1 without letting man2html(1) result this in making the
+	table entries a header (big letters).
+
+-	Makefile system: "make tests" now implies a "make all".
+
+	Thanks to Heiko Eißfeldt for reporting.
+
+-	libschily: The gethostname() emulation no longer returns ENOSYS
+	if namelen is < 0. The error code now is EINVAL.
+
+-	libschily: the lutimens() emulation no longer returns ENOSYS in case
+	that the lstat() call fails, since this error code may e.g. be
+	ENAMETOOLONG and used as an important indicator for long path name
+	handling.
+
+	This bug caused incorrect behavior when star extracted long pathnames
+	on a platform without utimensat().
+
+-	star: The code restructuring to openat() from Summer 2018 did not
+	only cause a noticeable speed up even when not using -find, it at
+	the same time resulted in a wrong error message when a file type
+	was seen that is not archivable (e.g. a socket while using the USTAR
+	format). The correct message was something like "Unsupported filetype",
+	while the bug caused a "file not found " message. This has been fixed
+	by adding a new parameter "fd" to the function stat_to_info().
+
+-	star: header.c::get_xhtype() we did forgot to initialize:
+
+		finfo.f_devminorbits
+	and
+		finfo.f_xflags
+
+	This is now done.
+
+-	star: The USTAR format now is able to create base-256 values in
+	the field "t_devmajor". "t_devminor" did already support base-256.
+
+-	star: The GNU tar format now is able to create base-256 values in
+	the fields "t_devmajor" and "t_devminor".
+
+-	star: The man page star.4 now mentions which fileds may have
+	base-256 numbers.
+
+-	star: The man page star.4 now longer contains the doubled "field field"
+	in the explanation of the added UID/GID number for ACLs.
+
+-	star: The man page star.4 now has a better description for the additional
+	numeric fields in the ACL entries to prevent GNU tar from continuing
+	with it's incompatible ACL implementation.
+
+-	star: New ACL reference archives for the ultra compact format, that has
+	been defined together with the libachive people, have been added to the
+	directory testscripts/:
+
+	acl-nfsv4-compact-test.tar.gz
+	acl-nfsv4-compact-test2.tar.gz
+	acl-nfsv4-compact-test3.tar.gz
+	acl-nfsv4-compact-test4.tar.gz
+	acl-nfsv4-compact-test5.tar.gz
+
+-	star: Linux now uses the new <linux/fs.h> instead of <ext2/ext2_fs.h>
+	to retrieve file flags.
+
+	Thanks to a hint from Martin Matuska <martin@matuska.org> from the
+	libarchive team.
+
+-	star: Support for the following new BSD Flags:
+
+		compressed hidden offline rdonly reparse sparse system
+
+	has been added.
+
+	Thanks to a hint from Martin Matuska <martin@matuska.org> from the
+	libarchive team.
+
+-	star: Support for the following new Linux flags:
+
+		dirsync nocow notail projinherit topdir
+
+	has been added.
+
+	Thanks to a hint from Martin Matuska <martin@matuska.org> from the
+	libarchive team.
+
+-	star: Support for reading non-comliant libarchive tarballs that use 
+
+		"securedeletion" or "journal"
+
+	instead of the documented text has been added. This was used by
+	libarchive until March 20, when libarchive has been fixed. We introduce
+	the above names for compatibility with old TARs created by libarchive.
+
+-	star: When an "old star" archive is read and this archive is from a system
+	like FreeBSD with non-continous minor bits, star no longer warns unless
+	there is a device file in the archive.
+
+-	star: unit tests: the scripts now contain
+
+		LC_ALL=C export LC_ALL
+
+	instead of just LC_ALL=C to make the environment exported.
+
+-	star/libstrar: The case where iconv() returns -1 and sets errno to E2BIG
+	is now handled correctly.
+
+-	star: The testscripts/ directory now contains the tar test archives
+	from the portability tests from Michal Górny. Check
+
+		http://cdrtools.sourceforge.net/private/portability-of-tar-features.html
+
+	for an updated (to match star-1.6) variant of the results from the portability
+	tests from Michal Górny.
+
+-	star: older versions of star did not print the messages:
+
+		"WARNING: Archive is 'xxx' compressed, trying to use the -xxx option.\n"
+
+	in case that the option -print-artype was in use. Later versions that
+	added support for more than "gzip" and "bzip2" forgot to add the same
+	exception for the new compression methods. We now ommit this message
+	for all compression types.
+
+-	star: older versions of star did not print the messages:
+
+		"WARNING: Archive is 'xxx' compressed, trying to use the -xxx option.\n"
+
+	in case that an expplicit decompression option was in use. Later
+	versions that added support for more than "gzip" and "bzip2" forgot to
+	add the same exception for the new compression methods. We now ommit
+	this message for all compression types.
+
+-	star: Support for the "lzma" compression has been added.
+
+-	star: Support for the "freeze2" compression has been added.
+
+-	star: The compression method name list did not include the text "zstd".
+	We added the missing text.
+
+-	star: The hint messages that are printed when a compressed input archive
+	is not seekable did forgot to mention "lzip" and "zstd". We added the
+	forgotten messages.
+
+-	star: New unit tests check whether star is able to auto-detect and auto
+	decompress various compression formats.
+
+-	star: The unit tests now include the portability tests from Michal Górny
+
+-	A new option cli=name (must be argv[1]) allows to select all
+	supported command line interfaces (star, suntar, gnutar,
+	pax, cpio) when called as star.
+
+	This is needed to be able to test all command line interfaces from
+	out unit tests since star is not installed in this case and a selection
+	from argv[0] would not work.
+
+-	include/schily/dbgmalloc.h: The check for stdio.h was wrong in case that
+	include/schily/dbgmalloc.h is included from include/schily/mconfig.h
+	that was included from include/schily/stdio.h
+
+-	libfind/star: the verbose listing code has ben restructured to have
+		the file permissions in the same string as the file type.
+		This is needed to implement the POSIX pax listformat interpreter
+		format %M
+
+-	libfind/star: the verbode listing no longer prints "l" for mandatory
+		record locking for non-directory type file, but rather only
+		for plain files.
+
+-	star:	The gnutar emulation now prints the --help output to stdout as
+		GNU tar.
+
+-	star:	The gnutar.1 man page now mentions that the GNU tar
+		options -g / -G did never work and it thus makes no sense to
+		implement them.
+
+-	star: very outdated code in list.c has been removed.
+
+-	star: Added new unit tests for incremental backups and restores.
+		This in special include tests that always fail with GNU tar
+		as GNU tar is not usable and never was usable for incremental
+		restores in case that the differences are more than trivial.
+
+-	star: new version date 2019-04-01
+
+
+
+TODO: 
+
+	-	implement support for NFSv4 system attributes
+
+	-	implement support for Trusted Solaris
+
+	-	Complete the man page for spax
+
+	-	Implement multi volume continuation headers that work for
+		files > 8 GB where the last tar header
+		(a POSIX.1-2001 'x'-header) was split across volumes.
+		In this case, if only POSIX compliant TAR features are allowed,
+		the extracting TAR would not be able to correctly skip the
+		large file as it does not know the content of the POSIX.1-2001
+		'x'-header. For this reason, later star versions need to implement
+		a method to create multi volume continuation (skip) headers that
+		include the size of the split POSIX.1-2001 'x'-header and the
+		size of the following large file.
+
+		Note that even with this method we would need a new method
+		(different from the current bitmap) to deal with multi volume
+		continuation headers for split files in case the FIFO in star
+		may be larger than 8 GB.
+
+	-	Implement an autoconf extension to to deal with Linux with XFS
+		where not all ACL handling is inside -lacl ??? is this still true?
+
+Revision history (short)
+
+1982	First version on UNOS (extract only)
+1985	Port to UNIX (fully functional version)
+1985	Added pre Posix method of handling special files/devices
+1986	First experiments with fifo as external process.
+1993	Remote tape access
+1993	diff option
+1994	Fifo with shared memory integrated into star
+1994	Very long filenames and sparse files
+1994	Gnutar and Ustar(Posix.1-1988) handling added
+1994	Xstar format (extended Posix.1-1988) defined and introduced
+1995	Ported to many platforms
+1999	Support for Win32 (Cygwin)
+1999	base 256 support to overcome limitation with octal fields
+2001	Large file support
+2001	Support for POSIX.1-2001 extended headers
+2001	Support for ACLs (based on the 1997 withdrawn POSIX draft) in POSIX.1-2001 extended headers
+2002	Support for extended file flags in POSIX.1-2001 extended headers
+2002	Support for extended inode meta data and meta files
+2003	New program tartest allows to verify POSIX.1-1990 tar archive compliance
+2003	Error control added to allow to selectively ignore error contitions
+2003	ED like pattern based file name substitution with -s '/from/to/[gp]'
+2003	Efficient built in -copy mode
+2003	Basic support for incremental dumps (incremental restore not yet ready)
+2003	CPIO archive support
+2003	New command 'pax/spax' for POSIX.1 command line compatibility.
+2003	New command 'cpio/scpio' for SUSv2 command line compatibility.
+2003	New command 'suntar' for Solaris command line compatibility.
+2003	New command 'gnutar' for GNU tar command line compatibility.
+2003	Support for reliable multi-volume archives with media size detection
+2004	Options -copyhardlinks/-copysymlinks/-copydlinks allow to extract links on platforms that do not support links
+2005	Support for full and incremental dumps and restores.
+2005	Support for cumulative incremental dumps and restores.
+2005	The find(1) code has been integrated via libfind and allows to use find on archives
+2005	Changed license from GPL to CDDL
+2005	Added support for a reliable sparse file interface in Solaris using SEEK_HOLE/SEEK_DATA
+2005	Added support for reliable multi volume handling
+2006	Added support for sparse files that end in a hole
+2007	Added new option -install that allows to overwrite live program text (install on a running system)
+2007	Added new option -xmeta to extract meta data only
+2010	Added support with -xmeta -force-hole to extract meta data as empty files of original size
+2013	Added support to extract timestamps in nanosecond granularity
+2013	Support for NFSv4 ACLs (identical to NTFS ACLs) in POSIX.1-2001 extended headers
+2018	Added support to compare timestamps in nanosecond granularity
+2018	Support for path name lengths up to 8 GB has been added.
+2019	Support for the cli= option has been added.
+
+
+Supported platforms:
+
+Virtually any! Known to work:
+
+SunOS 4.x, Solaris (SunOS 5.x), Linux,
+HP-UX, DG/UX, IRIX, AIX, FreeBSD, NetBSD, OpenBSD,
+OSF-1, True-64, QNX, BeOS, Apollo Domain/OS, Next-STep, 
+OS/2, SCO-openserver, SCO-unixware, Caldera OpenUnix,
+Cygwin (Win32), Sony NewsOS,  BSDi (BSD/OS), QNX,
+Apple Rhapsody, MacOS X, AmigaOS, GNU Hurd
+
+Joerg
+
+-------------------------------------------------------------
+Star is the fastest known implementation of a tar archiver.
+
+Star development started 1982, the first complete implementation has 
+been done in 1985. I never did my backups with other tools than star.
+
+Its main advantages over other tar implementations are:
+
+	fifo			- keeps the tape streaming.
+				  This gives you faster backups than
+				  you can achieve with ufsdump, if the
+				  size of the filesystem is > 1 GByte.
+
+	remote tape support	- a fast RMT implementation that has no
+				  probems to saturate a 100 Mb/s network.
+				  in the mid 1990s and today is evenmuch
+				  faster.
+
+	selectable cli		- star cli=xxx allows to select a command
+				  line interface from the list "star",
+				  "suntar", "gnutar", "pax", "cpio".
+
+	accurate sparse files	- star is able to reproduce holes in sparse
+				  files accurately if the OS includes 
+				  the needed support functions. This is
+				  currently true for Solaris-2.3 to
+				  Solaris-2.5.1
+
+	pattern matcher		- for a convenient user interface
+				  (see manual page for more details).
+				  To archive/extract a subset of files.
+
+	sophisticated diff	- user tailorable interface for comparing
+				  tar archives against file trees
+				  This is one of the most interesting parts
+				  of the star implementation.
+
+	no namelen limitation	- Before July 2018, star did archive and extract
+				  Pathnames up to 1024 Bytes. Since July 2018,
+				  star deals  with long names of arbitrary
+				  length. The same limitation applies to
+				  linknames.
+
+	deals with all 3 times	- stores/restores all 3 times of a file
+				  (even creation time)
+				  With POSIX.1-2001 the times are in nanosecond
+				  granularity.
+				  Star may reset access time after doing
+				  backup. On Solaris this can be done without
+				  changing the ctime.
+
+	does not clobber files	- more recent copies on disk will not be 
+				  clobbered from tape
+				  This may be the main advantage over other
+				  tar implementations. This allows
+				  automatically repairing of corruptions
+				  after a crash & fsck (Check for differences
+				  after doing this with the diff option).
+
+	automatic byte swap	- star automatically detects swapped archives
+				  and transparently reads them the right way
+
+	automatic format detect	- star automatically detects several common
+				  archive formats and adopts to them.
+				  Supported archive types are:
+				  Old tar, gnu tar, ansi tar, star,
+				  POSIX.1-2001 PAX, Sun's Solaris tar.
+
+
+	automatic compression detect - star automatically detects whether the
+				  archive is compressed. If it has been
+				  compressed with a compression program that
+				  is compatible to decompression with "gzip".
+				  "bzip2", "lzop", "p7zip", "xz", "zstd",
+				  ...,, star automatically activates
+				  decompression for 14 different compression
+				  types.
+
+	fully ansi compatible	- Star is fully ANSI/Posix 1003.1 compatible.
+				  See README.otherbugs for a complete
+				  description of bugs found in other tar
+				  implementations. Star is the first tar
+				  implementation that supports POSIX.1-2001.
+
+	support for ACLs and file flags - star supports Access Control Lists
+				  with the withdrawn POSIX method and the
+				  NFSv4 standard ACL method as well as
+				  extended file flags (as found on FreeBSD
+				  and Linux). Support to archive and restore
+				  other file properties may be easily added.
+				  NFSv4 ACLs and the deprecated POSIX draft
+				  ACLs are supported.
+
+	support for all inode metadata - star supports to put all inode
+				  metadata on the archive. This allows future
+				  versions of star to perform true
+				  incremental dumps.
+
+	sophisticated error control - allows to tell star which error types
+				  should be ignored for wich file name pattern.
+				  This allows to write backup scripts that give
+				  no error messages for all problems that are
+				  tolerable (e.g. growing log files).
+
+	ED like filename substitution - star supports automated pattern rule based
+				  file name substitution as documented for 'pax'.
+
+	A fast built in -copy mode - allows to make fast and accurate copies and
+				  directory tree comparisons.
+
+	Integrated find(1) code - allows many interesting new features that would
+				  be possible with a separate find call.
+
+Have a look at the manual page, it is included in the distribution.
+
