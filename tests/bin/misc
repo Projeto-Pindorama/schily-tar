@@ -1,6 +1,6 @@
 #!/bin/sh
 ###########################################################################
-# @(#)misc	1.4 16/07/10 Written 2011-2016 by J. Schilling
+# @(#)misc	1.5 19/05/09 Written 2011-2019 by J. Schilling
 ###########################################################################
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -16,6 +16,9 @@
 ###########################################################################
 #
 # Miscellaneous test functions
+#
+#	$expect_fail = true prevents to abort a test script
+#	$EXPECT_FAIL = true is a global overwrite for $expect_fail
 #
 ###########################################################################
 #
@@ -93,7 +96,7 @@ fi
 #
 ###########################################################################
 fail() {
-	if ${expect_fail-false}
+	if ${expect_fail-false} || ${EXPECT_FAIL-false}
 	then
 		if ${esilent-false}
 		then

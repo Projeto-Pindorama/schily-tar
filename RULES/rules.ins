@@ -1,6 +1,6 @@
-#ident @(#)rules.ins	1.29 18/05/03 
+#ident @(#)rules.ins	1.32 21/04/28 
 ###########################################################################
-# Written 1996-2018 by J. Schilling
+# Written 1996-2019 by J. Schilling
 ###########################################################################
 #
 # Rules for target installation
@@ -50,57 +50,66 @@ __INSMODEINS=	$(_INSMODEINS:$(_UNIQ)=$(INSMODEX))
 INSMODEINS=	$(__INSMODEINS:$(_UNIQ)%=%)
 
 dummy $(PHARDLINKS):	$(DEST_DIR)$(INSBASE)/$(PREINSDIR)$(INSDIR)$(SUBINSDIR)$(SUBINS)/$(TARGET)$(_EXEEXT)
-	@echo "	==> INSTALLING link \"$@\""; $(RM) $(RM_FORCE) $@; [ ! -d "$(@D)" ] && sh $(SRCROOT)/conf/mkdir-sh -p "$(@D)"; $(LN) $(DEST_DIR)$(INSBASE)/$(PREINSDIR)$(INSDIR)$(SUBINSDIR)$(SUBINS)/$(TARGET)$(_EXEEXT) $@
+	$(NOECHO)echo "	==> INSTALLING link \"$@\""; $(RM) $(RM_FORCE) $@; [ ! -d "$(@D)" ] && sh $(SRCROOT)/conf/mkdir-sh -p "$(@D)"; $(LN) $(DEST_DIR)$(INSBASE)/$(PREINSDIR)$(INSDIR)$(SUBINSDIR)$(SUBINS)/$(TARGET)$(_EXEEXT) $@
 
 symdummy $(PSYMLINKS):	$(DEST_DIR)$(INSBASE)/$(PREINSDIR)$(INSDIR)$(SUBINSDIR)$(SUBINS)/$(TARGET)$(_EXEEXT)
-	@echo "	==> INSTALLING symlink \"$@\""; $(RM) $(RM_FORCE) $@; [ ! -d "$(@D)" ] && sh $(SRCROOT)/conf/mkdir-sh -p "$(@D)"; $(SYMLINK) $(TARGET)$(_EXEEXT) $@
+	$(NOECHO)echo "	==> INSTALLING symlink \"$@\""; $(RM) $(RM_FORCE) $@; [ ! -d "$(@D)" ] && sh $(SRCROOT)/conf/mkdir-sh -p "$(@D)"; $(SYMLINK) $(TARGET)$(_EXEEXT) $@
 
 xinstall: finstall
-	@if [ ".$(XMK_FILE)" != . ] ; then				\
+	$(NOECHO)if [ ".$(XMK_FILE)" != . ] ; then				\
 		for XMK_F in $(XMK_FILE) XxZzY-- ; do			\
 			(						\
 			if [ -r ./$$XMK_F ] ; then				\
-				echo "	==> MAKING \"install\" ON SUBCOMPONENT \"$(CURDIR)/$$XMK_F\""; \
+				echo "	==> MAKING \"install\" ON SUBCOMPONENT \"$(CURWDIR)/$$XMK_F\""; \
 				"$(MAKE)" -f $$XMK_F $(MAKEMACS) XARCH=$(XARCH) install;	\
 			else							\
 				if [ $$XMK_F != XxZzY-- ]; then		\
 					echo "NOTICE: Partial source ($(DIRNAME)/$$XMK_F) missing";\
-				fi					\
+				fi;					\
+				:;					\
 			fi						\
 			);						\
 		done							\
+	else								\
+		: work around v7 shell bug;				\
 	fi
 
 xuninstall:
-	@if [ ".$(XMK_FILE)" != . ] ; then				\
+	$(NOECHO)if [ ".$(XMK_FILE)" != . ] ; then				\
 		for XMK_F in $(XMK_FILE) XxZzY-- ; do			\
 			(						\
 			if [ -r ./$$XMK_F ] ; then				\
-				echo "	==> MAKING \"uninstall\" ON SUBCOMPONENT \"$(CURDIR)/$$XMK_F\""; \
+				echo "	==> MAKING \"uninstall\" ON SUBCOMPONENT \"$(CURWDIR)/$$XMK_F\""; \
 				"$(MAKE)" -f $$XMK_F $(MAKEMACS) XARCH=$(XARCH) uninstall;	\
 			else							\
 				if [ $$XMK_F != XxZzY-- ]; then		\
 					echo "NOTICE: Partial source ($(DIRNAME)/$$XMK_F) missing";\
-				fi					\
+				fi;					\
+				:;					\
 			fi						\
 			);						\
 		done							\
+	else								\
+		: work around v7 shell bug;				\
 	fi
 
 man installman:
-	@if [ ".$(XMK_FILE)" != . ] ; then				\
+	$(NOECHO)if [ ".$(XMK_FILE)" != . ] ; then				\
 		for XMK_F in $(XMK_FILE) XxZzY-- ; do			\
 			(						\
 			if [ -r ./$$XMK_F ] ; then				\
-				echo "	==> MAKING \"$@\" ON SUBCOMPONENT \"$(CURDIR)/$$XMK_F\""; \
+				echo "	==> MAKING \"$@\" ON SUBCOMPONENT \"$(CURWDIR)/$$XMK_F\""; \
 				"$(MAKE)" -f $$XMK_F $(MAKEMACS) XARCH=$(XARCH) $@;	\
 			else							\
 				if [ $$XMK_F != XxZzY-- ]; then		\
 					echo "NOTICE: Partial source ($(DIRNAME)/$$XMK_F) missing";\
-				fi					\
+				fi;					\
+				:;					\
 			fi						\
 			);						\
 		done							\
+	else								\
+		: work around v7 shell bug;				\
 	fi
 
 finstall:		$(DEST_DIR)$(INSBASE)/$(PREINSDIR)$(INSDIR)$(SUBINSDIR)$(SUBINS) \

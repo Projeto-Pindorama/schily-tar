@@ -1,9 +1,9 @@
-/* @(#)fifo.h	1.36 18/10/22 Copyright 1989-2018 J. Schilling */
+/* @(#)fifo.h	1.40 20/07/22 Copyright 1989-2020 J. Schilling */
 /*
  *	Definitions for a "fifo" that uses
  *	shared memory between two processes
  *
- *	Copyright (c) 1989-2018 J. Schilling
+ *	Copyright (c) 1989-2020 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -81,7 +81,7 @@ typedef	struct	{
  *
  * In order to avoid the need for semaphores to control the change of values
  * in this structure, members marked with "P", are only modified by the
- * put side of the FIFO and members marked with "G" are only marked by the
+ * put side of the FIFO and members marked with "G" are only modified by the
  * get side of the FIFO.
  *
  * Members marked with "P-" are set by the put side and reset by the get side.
@@ -96,36 +96,38 @@ typedef struct {
 	char	* V getptr;	/* G  get pointer within shared memory	    */
 	char	*base;		/*    fifobase within shared memory segment */
 	char	*end;		/*    end of real shared memory segment	    */
-	int	size;		/*    fifosize within shared memory segment */
-	int	ibs;		/*    input transfer size		    */
-	int	obs;		/*    output transfer size		    */
-	int	rsize;		/*    restsize between head struct and .base */
+	long	size;		/*    fifosize within shared memory segment */
+	long	ibs;		/*    input transfer size		    */
+	long	obs;		/*    output transfer size		    */
+	long	rsize;		/*    restsize between head struct and .base */
 	V unsigned long	icnt;	/* P  input count (incremented on each put) */
 	V unsigned long	ocnt;	/* G  output count (incremented on each get) */
 	V char	iblocked;	/* P- input  (put side) is blocked	    */
 	V char	oblocked;	/* G- output (get side) is blocked	    */
+	V char	mayoblock;	/* G output (get side) may set oblocked	    */
 	V char	m1;		/*    Semaphore claimed by newvolhdr()	    */
 	V char	m2;		/*    Semaphore claimed by cr_file()	    */
 	V char	chreel;		/*    Semaphore claimed by startvol()	    */
 	V char	reelwait;	/* P- input (put side) is blocked on "chreel" */
 	V char	eflags;		/*    fifo exit flags			    */
 	V char	pflags;		/*    fifo put flags			    */
-	V int	flags;		/*    fifo flags			    */
+	V char	gflags;		/*    fifo get flags			    */
+				/*    2 or 6 bytes of padding		    */
 	V int	ferrno;		/*    errno from fifo background process    */
-	int	hiw;		/*    highwater mark			    */
-	int	low;		/*    lowwater mark			    */
+	long	hiw;		/*    highwater mark			    */
+	long	low;		/*    lowwater mark			    */
 	int	gp[2];		/*    sync pipe for get process		    */
 	int	pp[2];		/*    sync pipe for put process		    */
-	V int	puts;		/*    fifo put count statistic		    */
-	V int	gets;		/*    fifo get get statistic		    */
-	V int	empty;		/*    fifo was empty count statistic	    */
-	V int	full;		/*    fifo was full count statistic	    */
-	V int	maxfill;	/*    max # of bytes in fifo		    */
-	V int	moves;		/*    # of moves of residual bytes	    */
+	V long	puts;		/*    fifo put count statistic		    */
+	V long	gets;		/*    fifo get get statistic		    */
+	V long	empty;		/*    fifo was empty count statistic	    */
+	V long	full;		/*    fifo was full count statistic	    */
+	V long	maxfill;	/*    max # of bytes in fifo		    */
+	V long	moves;		/*    # of moves of residual bytes	    */
 	V Llong	mbytes;		/*    # of residual bytes moved		    */
 	m_stats	stats;		/*    statistics			    */
 	bitstr_t *bmap;		/*    Bitmap used to store TCB positions    */
-	int	bmlast;		/*    Last bits # in use in above Bitmap    */
+	long	bmlast;		/*    Last bits # in use in above Bitmap    */
 	GINFO	ginfo;		/*    To share GINFO for P.1-2001 'g' headers */
 } m_head;
 #undef	V
@@ -140,6 +142,7 @@ typedef struct {
 /*
  * The FIFO flags are used only inside fifo.c
  *
+ * gflags:
  * FIFO_MERROR	 set by the get side
  * FIFO_IWAIT	 set by the put side before startup, reset by the get side
  * FIFO_I_CHREEL set by the get side, reset by the put side with get waiting
@@ -151,6 +154,8 @@ typedef struct {
  * eflags:
  * FIFO_EXIT	 set by the side that decided to abort the program
  * FIFO_EXERRNO	 set by the side that decided to abort the program
+ *
+ * If we ever need more than 8 bits, we need to use a larger data type.
  */
 #define	FIFO_MERROR	0x001	/* G error on input (get side)	*/
 
@@ -173,7 +178,6 @@ typedef struct {
  * this only may block when a media change is done, the delay time is not
  * important or critical.
  */
-extern	BOOL	use_fifo;
 
 #define	fifo_enter_critical()	if (use_fifo) { \
 				extern  m_head  *mp;		\
@@ -208,5 +212,10 @@ extern	BOOL	use_fifo;
 #define	fifo_lock_critical()
 #define	fifo_unlock_critical()
 #endif
+
+/*
+ * we always need this external variable.
+ */
+extern	BOOL	use_fifo;
 
 #endif /* _FIFO_H */

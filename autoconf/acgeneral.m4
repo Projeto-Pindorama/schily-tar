@@ -1,4 +1,4 @@
-dnl @(#)acgeneral.m4	1.17 16/03/22 Copyright 1998-2016 J. Schilling
+dnl @(#)acgeneral.m4	1.24 21/07/12 Copyright 1998-2021 J. Schilling
 dnl
 dnl Parameterized macros.
 dnl Requires GNU m4.
@@ -55,7 +55,7 @@ divert(-1)dnl Throw away output until AC_INIT is called.
 changequote([, ])
 
 define(AC_ACVERSION, 2.13)
-define(AC_ACVERSION_SCHILY, 1.17-Schily)
+define(AC_ACVERSION_SCHILY, 1.24-Schily)
 
 dnl Some old m4's don't support m4exit.  But they provide
 dnl equivalent functionality by core dumping because of the
@@ -151,7 +151,7 @@ AC_DEFUN(AC_INIT_NOTICE,
 [# Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version] AC_ACVERSION AC_ACVERSION_SCHILY [
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
-# Copyright (C) 1998-2016 J. Schilling
+# Copyright (C) 1998-2021 J. Schilling
 #
 # This configure script is free software; the Free Software Foundation
 # gives unlimited permission to copy, distribute and modify it.
@@ -170,7 +170,7 @@ AC_DIVERT_POP()])
 dnl AC_INIT_PARSE_ARGS()
 AC_DEFUN(AC_INIT_PARSE_ARGS,
 [
-# Initialize some variables set by options.
+# Initialize some variables et by options.
 # The variables have the same names as the options, with
 # dashes changed to underlines.
 build=NONE
@@ -211,6 +211,7 @@ includedir='${prefix}/include'
 oldincludedir='/usr/include'
 infodir='${prefix}/info'
 mandir='${prefix}/man'
+ac_os_name=`(uname -s) 2> /dev/null`
 
 # Initialize some other variables.
 subdirs=
@@ -1215,7 +1216,7 @@ echo "configure:__oline__: checking $1" >&AC_FD_CC])
 
 dnl AC_MSG_RESULT(RESULT-DESCRIPTION)
 define(AC_MSG_RESULT,
-[eval echo "$ac_t""$1" 1>&AC_FD_MSG])
+[echo "$ac_t""$1" 1>&AC_FD_MSG])
 
 dnl AC_VERBOSE(RESULT-DESCRIPTION)
 define(AC_VERBOSE,
@@ -1242,7 +1243,11 @@ ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='${CC-cc} -c $CFLAGS $CPPFLAGS conftest.$ac_ext 1>&AC_FD_CC'
 ac_compile2='${CC-cc} -c $CFLAGS $CPPFLAGS conftest2.$ac_ext 1>&AC_FD_CC'
-ac_link='${CC-cc} -o conftest${ac_exeext} $CFLAGS $CPPFLAGS conftest.$ac_ext $LDFLAGS $LIBS 1>&AC_FD_CC'
+if test ."$ac_os_name" = ".OS/390" ; then
+	ac_link='${CC-cc} -o conftest${ac_exeext} $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS 1>&AC_FD_CC'
+else
+	ac_link='${CC-cc} -o conftest${ac_exeext} $CFLAGS $CPPFLAGS conftest.$ac_ext $LDFLAGS $LIBS 1>&AC_FD_CC'
+fi
 cross_compiling=$ac_cv_prog_cc_cross
 if test "$cross_compiling" = yes -a "$CONFIG_RMTCALL" != NONE ; then
 	cross_compiling=remote
@@ -1259,7 +1264,11 @@ ac_ext=C
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='${CXX-g++} -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext 1>&AC_FD_CC'
 ac_compile2='${CXX-g++} -c $CXXFLAGS $CPPFLAGS conftest2.$ac_ext 1>&AC_FD_CC'
-ac_link='${CXX-g++} -o conftest${ac_exeext} $CXXFLAGS $CPPFLAGS conftest.$ac_ext $LDFLAGS $LIBS 1>&AC_FD_CC'
+if test ."$ac_os_name" = ".OS/390" ; then
+	ac_link='${CXX-g++} -o conftest${ac_exeext} $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS 1>&AC_FD_CC'
+else
+	ac_link='${CXX-g++} -o conftest${ac_exeext} $CXXFLAGS $CPPFLAGS conftest.$ac_ext $LDFLAGS $LIBS 1>&AC_FD_CC'
+fi
 cross_compiling=$ac_cv_prog_cxx_cross
 if test "$cross_compiling" = yes -a "$CONFIG_RMTCALL" != NONE ; then
 	cross_compiling=remote
@@ -1274,7 +1283,11 @@ AC_DEFUN(AC_LANG_FORTRAN77,
 ac_ext=f
 ac_compile='${F77-f77} -c $FFLAGS conftest.$ac_ext 1>&AC_FD_CC'
 ac_compile2='${F77-f77} -c $FFLAGS conftest2.$ac_ext 1>&AC_FD_CC'
-ac_link='${F77-f77} -o conftest${ac_exeext} $FFLAGS conftest.$ac_ext $LDFLAGS $LIBS 1>&AC_FD_CC'
+if test ."$ac_os_name" = ".OS/390" ; then
+	ac_link='${F77-f77} -o conftest${ac_exeext} $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS 1>&AC_FD_CC'
+else
+	ac_link='${F77-f77} -o conftest${ac_exeext} $FFLAGS conftest.$ac_ext $LDFLAGS $LIBS 1>&AC_FD_CC'
+fi
 cross_compiling=$ac_cv_prog_f77_cross
 if test "$cross_compiling" = yes -a "$CONFIG_RMTCALL" != NONE ; then
 	cross_compiling=remote
@@ -1311,10 +1324,15 @@ dnl shell parser call but passed as textual arguments to the "eval" builtin and
 dnl then parsed inside "eval". For this reason there is no need for the () even
 dnl in case that the command contains an I/O redirection.
 dnl
+dnl If we however like to support the original UNIX V7 shell, this will not
+dnl work since shells older than 1984 do not support I/O redirection for
+dnl builtin commands. The V7 shell however still works with { eval echo ;}
+dnl so we now use { ;} instead of ( ), support the V7 shell and are still fast.
+dnl
 dnl AC_TRY_EVAL(VARIABLE)
 AC_DEFUN(AC_TRY_EVAL,
-[{ eval echo configure:__oline__: \"[$]$1\" 1>&AC_FD_CC; dnl
-eval [$]$1 2>&AC_FD_CC; }])
+[{ { eval echo configure:__oline__: \"[$]$1\" ;} 1>&AC_FD_CC; dnl
+{ eval [$]$1 ;} 2>&AC_FD_CC; }])
 
 dnl AC_TRY_COMMAND(COMMAND)
 AC_DEFUN(AC_TRY_COMMAND,
@@ -2108,12 +2126,13 @@ AC_CACHE_VAL(AC_CV_NAME,
 #ifdef	HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+int
 main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
-  fprintf(f, "%d\n", sizeof($1));
-  exit(0);
+  if (!f) return(1);
+  fprintf(f, "%d\n", (int)sizeof($1));
+  return(0);
 }], AC_CV_NAME=`cat conftestval`, AC_CV_NAME=0, ifelse([$2], , , AC_CV_NAME=$2))])dnl
 AC_MSG_RESULT($AC_CV_NAME)
 AC_DEFINE_UNQUOTED(AC_TYPE_NAME, $AC_CV_NAME)

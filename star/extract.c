@@ -1,13 +1,13 @@
-/* @(#)extract.c	1.165 19/01/16 Copyright 1985-2019 J. Schilling */
+/* @(#)extract.c	1.170 20/07/08 Copyright 1985-2020 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)extract.c	1.165 19/01/16 Copyright 1985-2019 J. Schilling";
+	"@(#)extract.c	1.170 20/07/08 Copyright 1985-2020 J. Schilling";
 #endif
 /*
  *	extract files from archive
  *
- *	Copyright (c) 1985-2019 J. Schilling
+ *	Copyright (c) 1985-2020 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -84,7 +84,7 @@ extern	FILE	*vpr;
 
 extern	char	*listfile;
 
-extern	int	bufsize;
+extern	long	bufsize;
 extern	char	*bigptr;
 
 extern	uid_t	dir_uid;
@@ -168,12 +168,12 @@ LOCAL	BOOL	install_rename	__PR((FINFO *info, char *xname));
 LOCAL	BOOL	name_exists	__PR((char *name));
 LOCAL	void	remove_tmpname	__PR((char *name));
 LOCAL	BOOL	get_ofile	__PR((FILE *f, FINFO *info));
-LOCAL	int	void_func	__PR((void *vp, char *p, int amount));
+LOCAL	ssize_t	void_func	__PR((void *vp, char *p, size_t amount));
 EXPORT	BOOL	void_file	__PR((FINFO * info));
 LOCAL	BOOL	void_bad	__PR((FINFO * info));
 EXPORT	int	xt_file		__PR((FINFO * info,
-					int (*)(void *, char *, int),
-					void *arg, int amt, char *text));
+					ssize_t (*)(void *, char *, size_t),
+					void *arg, long amt, char *text));
 EXPORT	void	skip_slash	__PR((FINFO * info));
 LOCAL	BOOL	has_dotdot	__PR((char *name));
 LOCAL	BOOL	inside_tree	__PR((FINFO * info));
@@ -319,7 +319,10 @@ extern	struct WALK walkstate;
 			if (xcpio_link(&finfo))		/* Now extract all   */
 				continue;
 		}
-		extracti(&finfo, imp);
+		if (extracti(&finfo, imp) > TRUE) {
+			errmsgno(EX_BAD, "Exiting as -one-file was specified\n");
+			break;
+		}
 	}
 #ifdef	USE_FIND
 	if (dofind) {
@@ -350,6 +353,8 @@ extracti(info, imp)
 		TCB	tb;
 	register TCB 	*ptb = &tb;
 		char	*name = info->f_name;
+		BOOL	didmatch = FALSE;
+	extern	BOOL	one_file;
 
 	if (listfile && !hash_lookup(info->f_name)) {
 		void_file(info);
@@ -359,9 +364,13 @@ extracti(info, imp)
 		void_file(info);
 		return (FALSE);
 	}
-	if (havepat && !match(info->f_name)) {
-		void_file(info);
-		return (FALSE);
+	if (havepat) {
+		if (!match(info->f_name)) {
+			void_file(info);
+			return (FALSE);
+		}
+		if (one_file)
+			didmatch = TRUE;
 	}
 	if (!is_file(info) && to_stdout) {
 		void_file(info);
@@ -589,7 +598,7 @@ link_ok:
 #ifdef COPY_LINKS_DELAYED
 	if ((copyhardlinks && is_link(info)) ||
 	    (copysymlinks && is_symlink(info)))
-		return (TRUE);
+		return (TRUE+didmatch);
 #endif
 set_modes:
 	if (!to_stdout)
@@ -600,7 +609,7 @@ error("-->setmode(%s, %llo)\n", info->f_name, (Ullong)info->f_mode);
 #endif
 	if (dorestore)
 		sym_addstat(info, imp);
-	return (TRUE);
+	return (TRUE+didmatch);
 }
 
 /*
@@ -641,7 +650,7 @@ newer(info, cinfo)
 	}
 
 	/*
-	 * nsec beachten wenn im Archiv!
+	 * Honor nsecs if part of the archive.
 	 */
 	havenano = (info->f_xflags & XF_MTIME) && (cinfo->f_flags & F_NSECS);
 	if ((cinfo->f_mtime > info->f_mtime) ||
@@ -671,9 +680,18 @@ newer(info, cinfo)
 		 * the resolution in the archive is nanoseconds, we need to
 		 * check based on microseconds to prevent extracting the
 		 * file from the archive again and again.
+		 * This is the UFS variant.
 		 */
 		if ((cinfo->f_mnsec % 1000 == 0) &&
 		    ((cinfo->f_mnsec / 1000) >= (info->f_mnsec / 1000)))
+			goto isnewer;
+
+		/*
+		 * This is the NTFS (Win-DOS) variant that is based on
+		 * 1/10 microseconds since 1601.
+		 */
+		if ((cinfo->f_mnsec % 100 == 0) &&
+		    ((cinfo->f_mnsec / 100) >= (info->f_mnsec / 100)))
 			goto isnewer;
 	} else if ((cinfo->f_mtime % 2) == 0 && (cinfo->f_mtime + 1) == info->f_mtime) {
 		/*
@@ -1370,17 +1388,17 @@ _make_dcopy(info, do_symlink, retp, eflags)
 	char	*dir = info->f_lname;
 	DIR	*dirp;
 	char	*dp;
-	int	nents;
+	size_t	nents;
 	int	ret = TRUE;
 	FINFO	ninfo;
 
 	if (do_symlink && info->f_lname[0] != '/') {
 
 		char	*p = strrchr(info->f_name, '/');
-		int	len;
+		size_t	len;
 
 		if (p) {
-			int	llen;
+			size_t	llen;
 
 			len = p - info->f_name + 1;
 			if ((len + (llen = strlen(info->f_lname))) > PATH_MAX) {
@@ -1426,7 +1444,7 @@ _make_dcopy(info, do_symlink, retp, eflags)
 
 	while (nents > 0) {
 		char	*name;
-		int	nlen;
+		size_t	nlen;
 
 		name = &dp[1];
 		nlen = strlen(name);
@@ -1494,7 +1512,7 @@ copy_file(from, to, do_symlink, eflags)
 	 */
 	if (do_symlink && from[0] != '/') {
 		char	*p = strrchr(to, '/');
-		int	len;
+		size_t	len;
 
 		if (p) {
 			int	llen;
@@ -1963,7 +1981,7 @@ get_ofile(f, info)
 		else
 			ret = get_forced_hole(f, info);
 	} else {
-		ret = xt_file(info, (int(*)__PR((void *, char *, int)))ffilewrite,
+		ret = xt_file(info, (ssize_t(*)__PR((void *, char *, size_t)))ffilewrite,
 						f, 0, "writing");
 	}
 	if (ret < 0) {
@@ -2005,11 +2023,11 @@ get_ofile(f, info)
 }
 
 /* ARGSUSED */
-LOCAL int
+LOCAL ssize_t
 void_func(vp, p, amount)
 	void	*vp;
 	char	*p;
-	int	amount;
+	size_t	amount;
 {
 	return (amount);
 }
@@ -2077,19 +2095,19 @@ void_bad(info)
  * Returns:
  *	TRUE	Extract OK
  *	FALSE	Extract not OK, may continue
- *	-1	An error occured, max not continue
+ *	-1	An error occurred, max not continue
  */
 EXPORT int
 xt_file(info, func, arg, amt, text)
 		FINFO	*info;
-		int	(*func) __PR((void *, char *, int));
+		ssize_t	(*func) __PR((void *, char *, size_t));
 		void	*arg;
-		int	amt;
+		long	amt;
 		char	*text;
 {
-	register int	amount; /* XXX ??? */
+	register long	amount; /* XXX ??? */
 	register off_t	size;
-	register int	tasize;
+	register long	tasize;
 		BOOL	ret = TRUE;
 
 	size = info->f_rsize;
@@ -2149,7 +2167,7 @@ xt_file(info, func, arg, amt, text)
 	}
 	return (ret);
 waseof:
-	errmsgno(EX_BAD, "Tar file too small (amount: %d bytes).\n", amount);
+	errmsgno(EX_BAD, "Tar file too small (amount: %ld bytes).\n", amount);
 	errmsgno(EX_BAD, "Unexpected EOF on input.\n");
 	return (-1);
 }
@@ -2237,7 +2255,7 @@ inside_tree(info)
 	char	*npath = _npath;
 	char	*p;
 	size_t	len;
-	ssize_t	nlen;
+	int	nlen;			/* Solaris resolvepath() returns int */
 	BOOL	ret = FALSE;
 extern	const	char	*wdir;
 

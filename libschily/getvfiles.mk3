@@ -1,17 +1,17 @@
-#ident %W% %E% %Q%
+#ident @(#)getvfiles.mk3	1.1 19/11/04 
 ###########################################################################
 # Sample makefile for installing manual pages
 ###########################################################################
-SRCROOT=	../..
+SRCROOT=	..
 RULESDIR=	RULES
 include		$(SRCROOT)/$(RULESDIR)/rules.top
 ###########################################################################
 
 MANDIR=		man
-TARGETMAN=	makerules
-MANSECT=	$(MANSECT_FILEFORM)
-MANSUFFIX=	$(MANSUFF_FILEFORM)
-MANFILE=	makerules.4
+TARGETMAN=	getvfiles
+MANSECT=	$(MANSECT_LIB)
+MANSUFFIX=	$(MANSUFF_LIB)
+MANFILE=	getvfiles.3
 
 ###########################################################################
 include		$(SRCROOT)/$(RULESDIR)/rules.man

@@ -1,17 +1,17 @@
-#ident %W% %E% %Q%
+#ident @(#)getlallargs.mk3	1.1 19/11/03 
 ###########################################################################
 # Sample makefile for installing manual pages
 ###########################################################################
-SRCROOT=	../..
+SRCROOT=	..
 RULESDIR=	RULES
 include		$(SRCROOT)/$(RULESDIR)/rules.top
 ###########################################################################
 
 MANDIR=		man
-TARGETMAN=	makefiles
-MANSECT=	$(MANSECT_FILEFORM)
-MANSUFFIX=	$(MANSUFF_FILEFORM)
-MANFILE=	makefiles.4
+TARGETMAN=	getlallargs
+MANSECT=	$(MANSECT_LIB)
+MANSUFFIX=	$(MANSUFF_LIB)
+MANFILE=	getlallargs.3
 
 ###########################################################################
 include		$(SRCROOT)/$(RULESDIR)/rules.man

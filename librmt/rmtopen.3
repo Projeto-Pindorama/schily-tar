@@ -1,4 +1,4 @@
-. \" @(#)rmtopen.3	1.6 18/06/09 Copyr 2002-2018 J. Schilling
+. \" @(#)rmtopen.3	1.9 20/09/04 Copyr 2002-2020 J. Schilling
 . \" Manual page for rmtopen
 . \"
 .if t .ds a \v'-0.55m'\h'0.00n'\z.\h'0.40n'\z.\v'0.55m'\h'-0.40n'a
@@ -13,18 +13,11 @@
 .if n .ds o oe
 .if n .ds u ue
 .if n .ds s sz
-.TH RMTOPEN 3L "2018/06/09" "J\*org Schilling" "Schily\'s LIBRARY FUNCTIONS"
+.TH RMTOPEN 3L "2022/10/06" "J\*org Schilling" "Schily\'s LIBRARY FUNCTIONS"
 .SH NAME
 rmtopen, rmtclose, rmtread, rmtwrite, rmtseek, rmtioctl \- operate on a connection to a remote tape server
+.RB ( -lrmt )
 .SH SYNOPSIS
-.LP
-.B cc
-.RI "[ " "flag" " \|.\|.\|. ] " "file" " \|.\|.\|."
-.B \-lrmt
-.B \-lsocket
-.B \-lnsl
-.RI "[ " "library" " \|.\|.\|. ]"
-.LP
 .nf
 .B
 #include <schily/librmt.h>
@@ -55,7 +48,7 @@ int rmtioctl(int remfd, int cmd, int count);
 sends an open request to the remote server,
 .I remfd
 is a file descriptor previously obtained from a call to 
-.BR rmtgetconn() ,
+.BR rmtgetconn (3),
 .I pathname
 is a path to be opened on the server side and
 .I fmode
@@ -66,7 +59,7 @@ the GNU open flag enhancements, only the lowest two bits
 in the open flags can be send to the remote server.
 .sp
 If the open requests succeeds, 
-.B rmtopen()
+.BR rmtopen (3)
 takes care of telling the remote side to switch to 
 .B RMT protocol VERSION 1 
 .TP
@@ -74,45 +67,45 @@ takes care of telling the remote side to switch to
 sends a close request to the remote server,
 .I remfd
 is a file descriptor previously obtained from a call to 
-.BR rmtgetconn() .
+.BR rmtgetconn (3).
 .TP
 .B rmtread()
 sends a read request to the remote server, 
 .I remfd
 is a file descriptor previously obtained from a call to 
-.BR rmtgetconn() .
+.BR rmtgetconn (3).
 The other parameters are the same as for a local
-.B read(2)
+.BR read (2)
 call.
-.B rmtread()
+.BR rmtread (3)
 will fail if there was no previous successful 
-.B rmtopen()
+.BR rmtopen (3)
 before.
 .TP
 .B rmtwrite()
 sends a write request to the remote server, 
 .I remfd
 is a file descriptor previously obtained from a call to 
-.BR rmtgetconn() .
+.BR rmtgetconn (3).
 The other parameters are the same as for a local
 .B write(2)
 call.
-.B rmtwrite()
+.BR rmtwrite (3)
 will fail if there was no previous successful 
-.B rmtopen()
+.BR rmtopen (3)
 before.
 .TP
 .B rmtseek()
 sends a seek request to the remote server, 
 .I remfd
 is a file descriptor previously obtained from a call to 
-.BR rmtgetconn() .
+.BR rmtgetconn (3).
 The other parameters are the same as for a local
-.B lseek(2)
+.BR lseek (2)
 call.
-.B rmtseek()
+.BR rmtseek (3)
 will fail if there was no previous successful 
-.B rmtopen()
+.BR rmtopen (3)
 before.
 .TP
 .B rmtioctl()
@@ -125,9 +118,9 @@ and
 are the values that should be filled into 
 .BR "struct mtop" .
 See
-.B mtio(7)
+.B mtio(4)
 for more information.
-.SH RETURNS
+.SH "RETURN VALUES"
 .TP
 .B rmtopen()
 returns a value >= 0 if the remote open succeeds.
@@ -137,21 +130,21 @@ returns a value >= 0 if the remote close succeeds.
 .TP
 .B rmtread()
 returns the return value obtained the remote 
-.B read(2)
+.BR read (2)
 request.
 .TP
 .B rmtwrite()
-returns the return value obtained the remote 
-.B write(2)
+returns the return value obtained by the remote 
+.BR write (2)
 request.
 .TP
 .B rmtseek()
-returns the return value obtained the remote 
-.B lseek(2)
+returns the return value obtained by the remote 
+.BR lseek (2)
 request.
 .TP
 .B rmtioctl()
-returns the return value obtained the remote 
+returns the return value obtained by the remote 
 .B ioctl(f, MTIOCTOP, struct mtop *)
 call.
 
@@ -168,6 +161,8 @@ value retrieved from the remote server.
 int	remfd;
 char	*remfn;
 char	host[256];
+int	iosize = 10240;	/* socket send/receive size to set up */
+
 
 if ((remfn = rmtfilename(filename)) != NULL) {
 	rmthostname(host, sizeof (host), filename);
@@ -186,7 +181,7 @@ if (rmtread(remfd, buf, sizeof(buf)) < 0)
 rmtclose(remfd);
 .fi
 \fP
-.SH ENVIRONMENT
+.\".SH ENVIRONMENT
 .\".SH FILES
 .SH "SEE ALSO"
 .BR rmt (1),
@@ -211,9 +206,9 @@ rmtclose(remfd);
 .BR _mtg2rmtg (3),
 .BR _rmtg2mtg (3),
 .BR errmsgno (3),
-.BR mtio (7)
+.BR mtio (4)
 
-.SH DIAGNOSTICS
+.\" .SH DIAGNOSTICS
 .SH NOTES
 While all other known
 .B rmt
@@ -246,6 +241,18 @@ server.
 If local and remote
 .B errno
 values do not match, programs may get confused.
+.PP
+Mail other bugs and suggestions to
+.B schilytools@mlists.in-berlin.de
+or open a ticket at
+.BR https://codeberg.org/schilytools/schilytools/issues .
+.PP
+The mailing list archive may be found at:
+.PP
+.nf
+.BR https://mlists.in-berlin.de/mailman/listinfo/schilytools-mlists.in-berlin.de .
+.fi
+
 .SH AUTHOR
 .LP
 .B librmt
@@ -254,19 +261,20 @@ In 1995, support for
 .B RMT VERSION 1
 has been added.
 .B librmt
-is still maintained by J\*org Schilling.
+is now maintained by the schilytools project authors.
 .LP
-.nf
-J\*org Schilling
-Seestr. 110
-D\-13353 Berlin
-Germany
-.fi
-.PP
-Mail bugs and suggestions to:
-.PP
-.B
-joerg.schilling@fokus.fraunhofer.de
-or
-.B
-joerg@schily.net
+
+.SH "SOURCE DOWNLOAD"
+The source code for
+.B librmt
+is included in the
+.B schilytools
+project and may be retrieved from the
+.B schilytools
+project at Codeberg at
+.LP
+.BR https://codeberg.org/schilytools/schilytools .
+.LP
+The download directory is
+.LP
+.BR https://codeberg.org/schilytools/schilytools/releases .

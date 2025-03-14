@@ -1,9 +1,9 @@
-/* @(#)xconfig.h.in	1.275 19/03/18 Copyright 1998-2019 J. Schilling */
+/* @(#)xconfig.h.in	1.292 21/08/16 Copyright 1998-2021 J. Schilling */
 /*
  *	Dynamic autoconf C-include code.
  *	Do not edit, this file has been created automatically.
  *
- *	Copyright (c) 1998-2019 J. Schilling
+ *	Copyright (c) 1998-2021 J. Schilling
  *
  *	The layout for this file is controlled by "configure".
  *	Switch off cstyle(1) checks for now.
@@ -87,6 +87,7 @@
 #undef HAVE_ULIMIT_H		/* to use ulimit() as fallback for getrlimit()  */
 #undef HAVE_PROCESS_H		/* to use process.h for spawn*() and cwait() */
 #undef HAVE_SYS_RESOURCE_H	/* to use sys/resource.h for rlimit() and wait3() */
+#undef HAVE_SYS_DBX_PLUGIN_H	/* to use sys/dbx_plugin.h for RLIM_NLIMITS on z/OS */
 #undef HAVE_PROCFS_H		/* to use procfs.h instead of sys/procfs.h (Solaris forces profcs-2) */
 #undef HAVE_SYS_PROCFS_H	/* to use sys/procfs.h for wait3() emulation */
 #undef HAVE_LIBPROC_H		/* to use libproc.h (Mac OS X) */
@@ -97,6 +98,7 @@
 #undef HAVE_SYS_RTPRIOCNTL_H	/* if the system supports SVr4 real time classes */
 #undef HAVE_SYS_PROCSET_H	/* if the system supports SVr4 process sets */
 #undef HAVE_SYS_LOADAVG_H	/* to use getloadavg() */
+#undef HAVE_SYS_AUXV_H		/* whether we have sys/auxv.h */
 #undef HAVE_SYS_SYSCALL_H	/* to use syscall() */
 #undef HAVE_SYS_MTIO_H		/* to use mtio definitions from sys/mtio.h */
 #undef HAVE_SYS_TAPE_H		/* to use mtio definitions from AIX sys/tape.h */
@@ -105,6 +107,8 @@
 #undef HAVE_SYS_SEM_H		/* to use definitions for semget() ... from sys/sem.h */
 #undef HAVE_SYS_IPC_H		/* to use definitions for ftok() ... from sys/ipc.h */
 #undef HAVE_SEMAPHORE_H		/* to use definitions for sema_init() ... from semaphore.h */
+#undef HAVE_SYS_MKDEV_H		/* to use definitions for major()/minor()/makedev() */
+#undef HAVE_SYS_SYSMACROS_H	/* to use definitions for major()/minor()/makedev() */
 #undef MAJOR_IN_MKDEV		/* if we should include sys/mkdev.h to get major()/minor()/makedev() */
 #undef MAJOR_IN_SYSMACROS	/* if we should include sys/sysmacros.h to get major()/minor()/makedev() */
 #undef HAVE_SYS_DKIO_H		/* if we may include sys/dkio.h for disk ioctls */
@@ -254,13 +258,13 @@
 #undef HAVE_FCHDIR		/* fchdir() is present in libc */
 #undef HAVE_FDOPENDIR		/* fdopendir() is present in libc */
 #undef HAVE_GETDELIM		/* getdelim() is present in libc */
-#undef HAVE_OPENAT		/* openat() is present in libc */
+#undef HAVE_OPENAT		/* P openat() is present in libc */
 #undef HAVE_ATTROPEN		/* attropen() is present in libc */
-#undef HAVE_FSTATAT		/* fstatat() is present in libc */
-#undef HAVE_FCHOWNAT		/* fchownat() is present in libc */
+#undef HAVE_FSTATAT		/* P fstatat() is present in libc */
+#undef HAVE_FCHOWNAT		/* P fchownat() is present in libc */
 #undef HAVE_FUTIMESAT		/* futimesat() is present in libc */
-#undef HAVE_RENAMEAT		/* renameat() is present in libc */
-#undef HAVE_UNLINKAT		/* unlinkat() is present in libc */
+#undef HAVE_RENAMEAT		/* P renameat() is present in libc */
+#undef HAVE_UNLINKAT		/* P unlinkat() is present in libc */
 #undef HAVE___ACCESSAT		/* __accessat() is present in libc */
 #undef HAVE_ACCESSAT		/* accessat() is present in libc */
 #undef HAVE_REALPATH		/* realpath() is present in libc */
@@ -268,15 +272,15 @@
 /*
  * See e.g. http://www.die.net/doc/linux/man/man2/mkdirat.2.html
  */
-#undef HAVE_MKDIRAT		/* mkdirat() is present in libc */
-#undef HAVE_FACCESSAT		/* faccessat() is present in libc */
-#undef HAVE_FCHMODAT		/* fchmodat() is present in libc */
-#undef HAVE_LINKAT		/* inkat() is present in libc */
-#undef HAVE_MKFIFOAT		/* mkfifoat() is present in libc */
-#undef HAVE_MKNODAT		/* mknodat() is present in libc */
-#undef HAVE_READLINKAT		/* readlinkat() is present in libc */
-#undef HAVE_SYMLINKAT		/* symlinkat() is present in libc */
-#undef HAVE_UTIMENSAT		/* utimensat() is present in libc */
+#undef HAVE_MKDIRAT		/* P mkdirat() is present in libc */
+#undef HAVE_FACCESSAT		/* P faccessat() is present in libc */
+#undef HAVE_FCHMODAT		/* P fchmodat() is present in libc */
+#undef HAVE_LINKAT		/* P linkat() is present in libc */
+#undef HAVE_MKFIFOAT		/* P mkfifoat() is present in libc */
+#undef HAVE_MKNODAT		/* P mknodat() is present in libc */
+#undef HAVE_READLINKAT		/* P readlinkat() is present in libc */
+#undef HAVE_SYMLINKAT		/* P symlinkat() is present in libc */
+#undef HAVE_UTIMENSAT		/* P utimensat() is present in libc */
 #undef HAVE_IOCTL		/* ioctl() is present in libc */
 #undef HAVE_FCNTL		/* fcntl() is present in libc */
 #undef HAVE_PIPE		/* pipe() is present in libc */
@@ -539,6 +543,8 @@
 #undef HAVE_GETPROGNAME		/* getprogname() is present in libc */
 #undef HAVE_SETPROGNAME		/* setprogname() is present in libc */
 #undef HAVE_PROC_PIDPATH	/* proc_pidpath() is present in libc */
+#undef HAVE_GETAUXVAL		/* getauxval() is present in libc (Linux) */
+#undef HAVE_ELF_AUX_INFO	/* elf_aux_info() is present in libc (FreeBSD) */
 #undef HAVE_VAR_PROGNAME	/* extern char *__progname is present in libc */
 #undef HAVE_VAR_PROGNAME_FULL	/* extern char *__progname_full is present in libc */
 #undef HAVE_GETLOADAVG		/* getloadavg() is present in libc */
@@ -572,6 +578,11 @@
 #undef HAVE_WCSWIDTH		/* wcswidth() is present in libc */
 #undef HAVE_WCTYPE		/* wctype() is present in libc */
 #undef HAVE_ISWCTYPE		/* iswctype() is present in libc */
+#undef HAVE_FGETWS		/* fgetws() is present in libc */
+#undef HAVE_WCSTOL		/* wcstol() is present in libc */
+#undef HAVE_WCSTOLL		/* wcstoul() is present in libc */
+#undef HAVE_WCSTOUL		/* wcstoul() is present in libc */
+#undef HAVE_WCSTOULL		/* wcstoull() is present in libc */
 
 
 #undef HAVE_CHFLAGS		/* chflags() is present in libc */
@@ -721,7 +732,13 @@
 #undef HAVE__DEV_FD_1		/* /dev/fd/1 present */
 #undef HAVE__DEV_FD_2		/* /dev/fd/2 present */
 #undef HAVE__USR_SRC_LINUX_INCLUDE	/* /usr/src/linux/include present */
+
+#undef HAVE_SYMLINK__BIN	/* /bin is a symlink */
+
+#undef HAVE__BIN_SH		/* /bin/sh present */
+#undef HAVE__USR_BIN_SH		/* /usr/bin/sh present */
 #undef HAVE__USR_XPG4_BIN_SH	/* /usr/xpg4/bin/sh present */
+#undef HAVE__BIN_POSIX_SH	/* /bin/posix/sh present */
 #undef HAVE__OPT_SCHILY_XPG4_BIN_SH	/* /opt/schily/xpg4/bin/sh present */
 #endif
 
@@ -734,6 +751,8 @@
 #undef	BIN_SHELL_CE_IS_BROKEN	/* /bin/sh -ce is broken */
 #undef	BIN_SHELL_BOSH		/* /bin/bosh is a working Bourne Shell */
 #undef	OPT_SCHILY_BIN_SHELL_BOSH /* /opt/schily/bin/bosh is a working Bourne Shell */
+#undef	CNF_PATH_ED		/* e.g. "/bin/ed" */
+#undef	CNF_PATH_RED		/* e.g. "/bin/red" */
 
 /*
  * OS madness
@@ -867,6 +886,12 @@
 
 #undef HAVE_SOCKADDR_STORAGE	/* if socket.h defines struct sockaddr_storage */
 
+#undef HAVE_PW_PASSWD		/* if struct passwd contains pw_passwd */
+
+/*
+ * Misc CC features
+ */
+#undef HAVE_CC_NOINLINE		/* cc supports __attribute__ ((__noinline__)) */
 
 /*
  * Byteorder/Bitorder
@@ -928,6 +953,7 @@
 #undef HAVE___INT64		/* Compiler defines __int64 type */
 #undef HAVE_LONGDOUBLE		/* Compiler defines long double type */
 #undef CHAR_IS_UNSIGNED		/* Compiler defines char to be unsigned */
+#undef HAVE_SIGSTKSZ_CONST	/* SIGSTKSZ is a constant */
 
 #undef const			/* Define to empty if const doesn't work */
 #undef uid_t			/* To be used if uid_t is not present  */
@@ -952,6 +978,15 @@
 #undef	HAVE_TYPE_INTMAX_T	/* if <stdint.h> defines intmax_t */
 #undef	HAVE_TYPE_UINTMAX_T	/* if <stdint.h> defines uintmax_t */
 
+#ifndef	NEED_INTTYPES
+#define	NO_INTTYPES
+#endif
+#if	defined(ultrix)		/* Ultrix has these types somewhere else */
+#ifndef	NO_INTTYPES		/* so we cannot define them here	*/
+#define	NO_INTTYPES
+#endif
+#endif
+#ifndef	NO_INTTYPES
 #undef int8_t			/* To be used if int8_t is not present */
 #undef int16_t			/* To be used if int16_t is not present */
 #undef int32_t			/* To be used if int32_t is not present */
@@ -966,6 +1001,7 @@
 #undef uint64_t			/* To be used if uint64_t is not present */
 #endif
 #undef uintmax_t		/* To be used if uintmax_t is not present */
+#endif	/* NO_INTTYPES */
 
 #undef	HAVE_TYPE_GREG_T	/* if <sys/frame.h> defines greg_t */
 
@@ -1062,7 +1098,14 @@
 #if defined(HAVE_ACL_GET_FILE) && defined(HAVE_ACL_SET_FILE) && \
     defined(HAVE_ACL_FROM_TEXT) && defined(HAVE_ACL_TO_TEXT) && \
     defined(HAVE_ACL_FREE)
+#if !defined(OS390) && !defined(__MVS__)
+	/*
+	 * z/OS implements the withdrawn POSIX draft ACL interface functions
+	 * but uses different data structures. As a result, we currently cannot
+	 * yet implement ACL support for z/OS.
+	 */
 #	define	HAVE_POSIX_ACL	1 /* Withdrawn POSIX draft ACL's present */
+#endif
 #endif
 
 /*
@@ -1145,6 +1188,15 @@
 #endif
 
 #endif	/* USE_ACL */
+
+/*
+ * Mainly needed for z/OS that seems to be the only OS based on EBCDIC.
+ */
+#if	('i' + 1) < 'j'
+#define	HAVE_EBCDIC
+#else
+#define	HAVE_ASCII
+#endif
 
 /*
  * Misc CC / LD related stuff

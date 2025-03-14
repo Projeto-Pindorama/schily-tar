@@ -1,4 +1,4 @@
-. \" @(#)librmt.3	1.7 18/06/09 Copyr 2002-2018 J. Schilling
+. \" @(#)librmt.3	1.10 20/09/04 Copyr 2002-2020 J. Schilling
 . \" Manual page for librmt
 . \"
 .if t .ds a \v'-0.55m'\h'0.00n'\z.\h'0.40n'\z.\v'0.55m'\h'-0.40n'a
@@ -13,20 +13,12 @@
 .if n .ds o oe
 .if n .ds u ue
 .if n .ds s sz
-.TH LIBRMT 3L "2018/06/09" "J\*org Schilling" "Schily\'s LIBRARY FUNCTIONS"
+.TH LIBRMT 3L "2022/09/11" "J\*org Schilling" "Schily\'s LIBRARY FUNCTIONS"
 .SH NAME
-librmt \- remote magtape protocol client interface library
+librmt \- remote magtape protocol client interface library (-lrmt)
 .SH SYNOPSIS
 .LP
-.B cc
-.RI "[ " "flag" " \|.\|.\|. ] " "file" " \|.\|.\|."
-.B \-lrmt
-.B \-lsocket
-.B \-lnsl
-.RI "[ " "library" " \|.\|.\|. ]"
-.LP
-.B
-#include <schily/librmt.h>
+.B #include <schily/librmt.h>
 .SH DESCRIPTION
 .LP
 Functions in this library provide an interface to a remote tape server program.
@@ -39,7 +31,7 @@ client and
 .B rmt
 server do not run on the same OS and use a CPU with the same bit width and byte order.
 .LP
-In addition, this implementation supports a GNU extension that allows to use
+In addition, this implementation supports a GNU extension that allows one to use
 .BR open (2)
 flags beyond
 .BR O_RDONLY ", " O_WRONLY ", " O_RDWR .
@@ -61,9 +53,9 @@ to create a secure shell connection.
 If the environment
 .B RSH
 is empty, then the default
-.B rcmd()
+.BR rcmd (3)
 is used even in case
-.B rmtrsh()
+.BR rmtrsh (3)
 has been called.
 .TP
 .B RMT
@@ -79,7 +71,7 @@ If the environment
 is empty, then the default
 .B /etc/rmt
 is used even in case
-.B rmtrmt()
+.BR rmtrmt (3)
 has been called.
 .sp
 Note that the remote tape server program name will be ignored if you log in
@@ -87,25 +79,25 @@ using an account that has been created with a remote tape server program as
 login shell.
 .SH INTERFACES
 
-.BR rmtinit (),
-.BR rmtdebug (),
+.BR rmtinit (3),
+.BR rmtdebug (3),
 .BR rmtrmt (3),
 .BR rmtrsh (3),
-.BR rmthostname (),
-.BR rmtfilename (),
-.BR rmtgetconn (),
-.BR rmtopen (),
-.BR rmtioctl (),
-.BR rmtclose (),
-.BR rmtread (),
-.BR rmtwrite (),
-.BR rmtseek (),
-.BR rmtxstatus (),
-.BR rmtstatus (),
-.BR _mtg2rmtg (),
-.BR _rmtg2mtg ()
+.BR rmthostname (3),\%
+.BR rmtfilename (3),
+.BR rmtgetconn (3),
+.BR rmtopen (3),
+.BR rmtioctl (3),
+.BR rmtclose (3),
+.BR rmtread (3),
+.BR rmtwrite (3),
+.BR rmtseek (3),
+.BR rmtxstatus (3),
+.BR rmtstatus (3),
+.BR _mtg2rmtg (3),
+.BR _rmtg2mtg (3)
 
-.SH FILES
+.\" .SH FILES
 .SH "SEE ALSO"
 .BR rmt (1),
 .BR rsh (1),
@@ -113,28 +105,43 @@ login shell.
 .BR rcmd (3)
 
 .\".SH NOTES
-.\".SH BUGS
-.SH AUTHOR
-.LP
+.SH BUGS
+.PP
+None currently known.
+.PP
+Mail bugs and suggestions to
+.B schilytools@mlists.in-berlin.de
+or open a ticket at
+.BR https://codeberg.org/schilytools/schilytools/issues .
+.PP
+The mailing list archive may be found at:
+.PP
+.nf
+.BR https://mlists.in-berlin.de/mailman/listinfo/schilytools-mlists.in-berlin.de .
+.fi
+
+.SH AUTHORS
 .B librmt
 has been written in 1990 by J\*org Schilling.
 In 1995, support for
 .B RMT VERSION 1
 has been added.
 .B librmt
-is still maintained by J\*org Schilling.
+is now maintained by the schilytools project authors.
+
+.SH "SOURCE DOWNLOAD"
+The source code for
+.B librmt
+and
+.B rmt
+is included in the
+.B schilytools
+project and may be retrieved from the
+.B schilytools
+project at Codeberg at
 .LP
-.nf
-J\*org Schilling
-Seestr. 110
-D\-13353 Berlin
-Germany
-.fi
-.PP
-Mail bugs and suggestions to:
-.PP
-.B
-joerg.schilling@fokus.fraunhofer.de
-or
-.B
-joerg@schily.net
+.BR https://codeberg.org/schilytools/schilytools .
+.LP
+The download directory is
+.LP
+.BR https://codeberg.org/schilytools/schilytools/releases .

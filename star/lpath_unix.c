@@ -1,13 +1,13 @@
-/* @(#)lpath_unix.c	1.13 19/01/14 Copyright 2018-2019 J. Schilling */
+/* @(#)lpath_unix.c	1.15 20/07/01 Copyright 2018-2020 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)lpath_unix.c	1.13 19/01/14 Copyright 2018-2019 J. Schilling";
+	"@(#)lpath_unix.c	1.15 20/07/01 Copyright 2018-2020 J. Schilling";
 #endif
 /*
  *	Routines for long path names on unix like operating systems
  *
- *	Copyright (c) 2018-2018 J. Schilling
+ *	Copyright (c) 2018-2020 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -39,6 +39,10 @@ static	UConst char sccsid[] =
 #include <schily/schily.h>
 #include "starsubs.h"
 
+#ifndef	ENAMETOOLONG
+#define	ENAMETOOLONG	EINVAL
+#endif
+
 EXPORT	int	lchdir		__PR((char *name));
 #if	defined(IS_SUN) && defined(__SVR4) && defined(DO_CHDIR_LONG)
 LOCAL	void	sunos5_cwdfix	__PR((void));
@@ -49,7 +53,7 @@ EXPORT	int	laccess		__PR((char *name, int amode));
 EXPORT	int	lstatat		__PR((char *name, struct stat *buf, int flag));
 EXPORT	int	lchmodat	__PR((char *name, mode_t mode, int flag));
 EXPORT	int	lutimensat	__PR((char *name, struct timespec *ts, int flag));
-EXPORT	int	lreadlink	__PR((char *name, char *buf, size_t bufsize));
+EXPORT	int	lreadlink	__PR((char *name, char *buf, size_t bfsize));
 EXPORT	int	lsymlink	__PR((char *name, char *name2));
 EXPORT	int	llink		__PR((char *name, char *name2));
 EXPORT	int	lrename		__PR((char *name, char *name2));
@@ -62,7 +66,7 @@ EXPORT	FILE	*lfilemopen	__PR((char *name, char *mode, mode_t cmode));
 LOCAL	int	_fileopenat	__PR((int fd, char *name, char *mode));
 EXPORT	int	_lfileopen	__PR((char *name, char *mode));
 EXPORT	DIR	*lopendir	__PR((char *name));
-LOCAL	int	hop_dirs	__PR((char *name, char **np));
+EXPORT	int	hop_dirs	__PR((char *name, char **np));
 
 /*
  * A chdir() implementation that is able to deal with ENAMETOOLONG.
@@ -325,10 +329,10 @@ lutimensat(name, ts, flag)
 
 #ifdef	HAVE_READLINK
 EXPORT int
-lreadlink(name, buf, bufsize)
+lreadlink(name, buf, bfsize)
 	char		*name;
 	char		*buf;
-	size_t		bufsize;
+	size_t		bfsize;
 {
 #ifdef	HAVE_FCHDIR
 	char	*p;
@@ -337,7 +341,7 @@ lreadlink(name, buf, bufsize)
 #endif
 	int	ret;
 
-	if ((ret = readlink(name, buf, bufsize)) < 0 &&
+	if ((ret = readlink(name, buf, bfsize)) < 0 &&
 	    geterrno() != ENAMETOOLONG) {
 		return (ret);
 	}
@@ -347,7 +351,7 @@ lreadlink(name, buf, bufsize)
 		return (ret);
 
 	fd = hop_dirs(name, &p);
-	ret = readlinkat(fd, p, buf, bufsize);
+	ret = readlinkat(fd, p, buf, bfsize);
 	err = geterrno();
 	close(fd);
 	seterrno(err);
@@ -801,7 +805,7 @@ lopendir(name)
 }
 
 #ifdef	HAVE_FCHDIR
-LOCAL int
+EXPORT int
 hop_dirs(name, np)
 	char	*name;
 	char	**np;

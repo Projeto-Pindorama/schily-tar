@@ -1,6 +1,6 @@
 #!/bin/sh
 ###########################################################################
-# @(#)seq	1.1 16/06/23 Written 2016 by J. Schilling
+# @(#)seq	1.2 20/03/30 Written 2016-2020 by J. Schilling
 ###########################################################################
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,7 +18,10 @@
 # Define a simple seq if the command is missing
 #
 ###########################################################################
-if type seq > /dev/null; then
+#
+# ksh88 on IRIX writes "seq not found" to stderr.
+#
+if type seq > /dev/null 2> /dev/null ; then
 	:
 else
 	seq() {

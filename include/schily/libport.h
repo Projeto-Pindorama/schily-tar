@@ -1,9 +1,9 @@
-/* @(#)libport.h	1.49 18/07/23 Copyright 1995-2018 J. Schilling */
+/* @(#)libport.h	1.52 21/06/16 Copyright 1995-2021 J. Schilling */
 /*
  *	Prototypes for POSIX standard functions that may be missing on the
  *	local platform and thus are implemented inside libschily.
  *
- *	Copyright (c) 1995-2018 J. Schilling
+ *	Copyright (c) 1995-2021 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -68,6 +68,11 @@ extern "C" {
 /*PRINTFLIKE3*/
 extern	int	snprintf __PR((char *, size_t, const char *, ...))
 					__printflike__(3, 4);
+#endif
+#ifndef	HAVE_VSNPRINTF
+#ifdef	_SCHILY_VARARGS_H
+extern	int	vsnprintf __PR((char *, size_t, const char *, va_list));
+#endif
 #endif
 #endif
 
@@ -210,6 +215,11 @@ extern	wchar_t		*wcsrchr	__PR((const wchar_t *s1, wchar_t c));
 extern	wchar_t		*wcsstr		__PR((const wchar_t *s1,
 							const wchar_t *s2));
 #endif
+#ifndef	HAVE_WCSTOL
+extern	long		wcstol		__PR((const wchar_t *nptr,
+							wchar_t **endptr,
+							int base));
+#endif
 #endif	/* _SCHILY_WCHAR_H */
 
 #ifndef	HAVE_RENAME
@@ -351,15 +361,15 @@ extern	int		fstatat __PR((int fd, const char *name,
 #ifdef	_SCHILY_TIME_H
 #ifndef	HAVE_FUTIMENS
 extern	int		futimens __PR((int fd,
-					const struct timespec __times[2]));
+					const struct timespec __times__[2]));
 #endif
 #ifndef	HAVE_FUTIMESAT
 extern	int		futimesat __PR((int fd, const char *name,
-					const struct timeval __times[2]));
+					const struct timeval __times__[2]));
 #endif
 #ifndef	HAVE_LUTIMENS
 extern	int		lutimens __PR((const char *name,
-					const struct timespec __times[2]));
+					const struct timespec __times__[2]));
 #endif
 #endif	/* _SCHILY_TIME_H */
 #ifndef	HAVE_LINKAT
@@ -397,11 +407,11 @@ extern	int		unlinkat __PR((int fd, const char *name, int flag));
 #ifdef	_SCHILY_TIME_H
 #ifndef	HAVE_UTIMENS
 extern	int		utimens __PR((const char *name,
-					const struct timespec __times[2]));
+					const struct timespec __times__[2]));
 #endif
 #ifndef	HAVE_UTIMENSAT
 extern	int		utimensat __PR((int fd, const char *name,
-					const struct timespec __times[2],
+					const struct timespec __times__[2],
 					int flag));
 #endif
 #endif	/* _SCHILY_TIME_H */

@@ -1,8 +1,8 @@
-/* @(#)star_unix.c	1.118 19/03/11 Copyright 1985, 1995, 2001-2019 J. Schilling */
+/* @(#)star_unix.c	1.120 19/11/24 Copyright 1985, 1995, 2001-2019 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)star_unix.c	1.118 19/03/11 Copyright 1985, 1995, 2001-2019 J. Schilling";
+	"@(#)star_unix.c	1.120 19/11/24 Copyright 1985, 1995, 2001-2019 J. Schilling";
 #endif
 /*
  *	Stat / mode / owner routines for unix like
@@ -91,6 +91,7 @@ EXPORT	BOOL	getinfo		__PR((char *name, FINFO *info));
 #ifdef	HAVE_FSTATAT
 EXPORT	BOOL	getinfoat	__PR((int fd, char *name, FINFO *info));
 #endif
+EXPORT	BOOL	getstat		__PR((char *name, struct stat *sp));
 EXPORT	BOOL	stat_to_info	__PR((int fd, struct stat *sp, FINFO *info));
 LOCAL	void	print_badnsec	__PR((FINFO *info, char *name, long val));
 EXPORT	void	checkarch	__PR((FILE *f));
@@ -243,6 +244,32 @@ newstat:
 	return (stat_to_info(fd, &stbuf, info));
 }
 #endif
+
+EXPORT BOOL
+getstat(name, sp)
+	char		*name;
+	struct stat	*sp;
+{
+newstat:
+	if (paxfollow) {
+		if (lstatat(name, sp, 0 /* stat */) < 0) {
+			if (geterrno() == EINTR)
+				goto newstat;
+			if (geterrno() != ENOENT)
+				return (FALSE);
+
+			while (lstatat(name, sp, AT_SYMLINK_NOFOLLOW) < 0) {
+				if (geterrno() != EINTR)
+					return (FALSE);
+			}
+		}
+	} else if (lstatat(name, sp, follow?0:AT_SYMLINK_NOFOLLOW) < 0) {
+		if (geterrno() == EINTR)
+			goto newstat;
+		return (FALSE);
+	}
+	return (TRUE);
+}
 
 EXPORT BOOL
 stat_to_info(fd, sp, info)
@@ -544,7 +571,7 @@ again:
 		 * Some filesystems do not allocate disk space for files that
 		 * consist of one hole and no written data.
 		 * If we are on a platform that does not support to read hole
-		 * lists for sparse files, this allows to avoid wasting time
+		 * lists for sparse files, this allows one to avoid wasting time
 		 * reading through the whole file.
 		 *
 		 * In October 2013, it turned out that at least NetAPP stores
@@ -590,8 +617,10 @@ again:
 #endif  /* USE_ACL */
 
 #ifdef	USE_XATTR
-	if (dolxattr)
-		(void) get_xattr(info);
+	/*
+	 * Note: Linux xattr check/fetch has been moved to create.c::take_file()
+	 * for performance reasons.
+	 */
 #endif
 
 	return (TRUE);

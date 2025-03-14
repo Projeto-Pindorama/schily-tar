@@ -1,6 +1,6 @@
 #!/bin/sh
 ###########################################################################
-# @(#)docommand	1.13 18/09/20 Written 2011-2016 by J. Schilling
+# @(#)docommand	1.14 19/05/09 Written 2011-2019 by J. Schilling
 ###########################################################################
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -37,6 +37,10 @@
 #
 # Example:
 # docommand T1 "echo test" 0 "test\n" ""
+#
+# Shell variables:
+#	$expect_fail = true prevents to abort a test script
+#	$EXPECT_FAIL = true is a global overwrite for $expect_fail
 #
 ###########################################################################
 docommand() {

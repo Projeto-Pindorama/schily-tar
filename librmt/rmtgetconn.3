@@ -1,4 +1,4 @@
-. \" @(#)rmtgetconn.3	1.4 18/06/09 Copyr 2002-2018 J. Schilling
+. \" @(#)rmtgetconn.3	1.7 20/09/04 Copyr 2002-2020 J. Schilling
 . \" Manual page for rmtgetconn
 . \"
 .if t .ds a \v'-0.55m'\h'0.00n'\z.\h'0.40n'\z.\v'0.55m'\h'-0.40n'a
@@ -13,18 +13,12 @@
 .if n .ds o oe
 .if n .ds u ue
 .if n .ds s sz
-.TH RMTGETCONN 3L "2018/06/09" "J\*org Schilling" "Schily\'s LIBRARY FUNCTIONS"
+.TH RMTGETCONN 3L "2022/08/21" "J\*org Schilling" "Schily\'s LIBRARY FUNCTIONS"
 .SH NAME
-rmtinit, rmtdebug, rmthostname, rmtfilename, rmtgetconn \- initiate a connection to a remote tape server
+rmtinit, rmtdebug, rmthostname, rmtfilename, rmtgetconn \- initiate a
+connection to a remote tape server
+.RB ( \-lrmt )
 .SH SYNOPSIS
-.LP
-.B cc
-.RI "[ " "flag" " \|.\|.\|. ] " "file" " \|.\|.\|."
-.B \-lrmt
-.B \-lsocket
-.B \-lnsl
-.RI "[ " "library" " \|.\|.\|. ]"
-.LP
 .nf
 .B
 #include <schily/librmt.h>
@@ -77,48 +71,48 @@ int rmtgetconn(host, trsize, excode)
 .SH DESCRIPTION
 .TP
 .B rmtinit()
-Is an optional function that allows to set up a function for 
+Is an optional function that allows one to set up a function for
 error printing and a function to be called to exit the program.
 If 
-.B rmtinit()
+.BR rmtinit (3)
 is not called or any of the function pointers is 
 .SM NULL,
 the appropriate default function is used instead.
-The supplied error printing function needs to be compatible with
+The supplied error printing function needs to implement the same interface as
 .BR errmsgno (3)
-and the supplied exit function needs to be compatible with
+and the supplied exit function needs to implement the same interface as
 .BR exit (3).
 .TP
 .B rmtdebug()
-allows to set the debug level for the library code. The default debug
+allows one to set the debug level for the library code. The default debug
 level is 0 and does not print debug messages.
 .TP
 .B rmtrmt()
-allows to set up a different default path to the remote
+allows one to set up a different default path to the remote
 .B rmt
 server program. The default is otherwise
 .BR /etc/rmt .
 The 
 .B RMT
 environment still overwrites the default set up by
-.BR rmtrmt() .
+.BR rmtrmt (3).
 .TP
 .B rmtrsh()
-allows to set up a different remote login program to the remote
+allows one to set up a different remote login program to the remote
 .B rmt
 server program. The default is otherwise to use
 .BR rcmd (3).
 The 
 .B RSH
 environment still overwrites the default set up by
-.BR rmtrsh() .
+.BR rmtrsh (3).
 .TP
 .B rmtfilename()
 is given a filename that may be either in remote file syntax (
 .I hostname:filename
 or
 .I user@hostname:filename
-) or not.
+) or specified as a hierarchical file path.
 If the argument turns out to be in remote file syntax, a pointer to the
 filename part is returned.
 .TP
@@ -136,16 +130,16 @@ The third argument is a string in remote file syntax.
 This function establishes a connection to the remote tape server process.
 The first parameter is the usr/host part of a string in remote file syntax
 and should be created via
-.BR rmthostname().
+.BR rmthostname (3).
 The second parameter is the expected maximum transfer size. It is used to set up
 kernel buffering via 
-.B setsockopt()
+.BR setsockopt (3)
 to increase performance.
 The third parameter is an alternate exit code to be used instead of the library 
 default if 
-.B rmtgetconn()
+.BR rmtgetconn (3)
 decides to call
-.BR exit().
+.BR exit (3).
 This allows commands like 
 .B ufsdump
 to use the documented exit codes for startup errors.
@@ -183,26 +177,26 @@ argument turns out to be not in remote file syntax.
 .B rmtgetconn()
 return a file descriptor which is suitable to be used as first argument
 for functions like
-.B rmtopen()
+.BR rmtopen (3)
 or
-.BR rmtwrite() .
+.BR rmtwrite (3).
 If 
-.B rmtgetconn()
+.BR rmtgetconn (3)
 fails to set up a connection, -1 is returned.
 If
-.B rmtgetconn()
+.BR rmtgetconn (3)
 is unable to find the port number for shell/tcp, the current uid has no
 entry in the passwd file or the user name includes illegal characters,
 .B exit()
 is called.
 If you do not like 
-.B rmtgetconn()
+.BR rmtgetconn (3)
 to exit in this case, call
-.B rmtinit()
+.BR rmtinit (3)
 before and install a non exiting function as 
-.B exit() 
+.BR exit (3)
 handler; 
-.B rmtgetconn()
+.BR rmtgetconn (3)
 then will return -2 after this function did return.
 . \" .SH ERRORS
 
@@ -213,6 +207,7 @@ then will return -2 after this function did return.
 int	remfd;
 char	*remfn;
 char	host[256];
+int	iosize = 10240;	/* socket send/receive size to set up */
 
 if ((remfn = rmtfilename(filename)) != NULL) {
 	rmthostname(host, sizeof (host), filename);
@@ -248,9 +243,9 @@ to create a secure shell connection.
 If the environment
 .B RSH
 is empty, then the default
-.B rcmd()
+.BR rcmd (3)
 is used even in case
-.B rmtrsh()
+.BR rmtrsh (3)
 has been called.
 .TP
 .B RMT
@@ -266,7 +261,7 @@ If the environment
 is empty, then the default
 .B /etc/rmt
 is used even in case
-.B rmtrmt()
+.BR rmtrmt (3)
 has been called.
 .sp
 Note that the remote tape server program name will be ignored if you log in
@@ -297,8 +292,8 @@ login shell.
 .BR _rmtg2mtg (3),
 .BR errmsgno (3)
 
-.SH DIAGNOSTICS
-.SH NOTES
+.\" .SH DIAGNOSTICS
+.\" .SH NOTES
 .SH BUGS
 .LP
 For now (late 2002), we know that the following programs
@@ -320,14 +315,26 @@ a bug for their implementation of
 .BR ssh (1).
 .LP
 If you use 
-.B rmtgetconn()
+.BR rmtgetconn (3)
 to create a remote connection via an unfixed
 .BR rsh (1)
 or 
 .BR ssh (1),
 be prepared that terminal generated signals may interrupt the
 remote connection.
-.SH AUTHOR
+.PP
+Mail other bugs and suggestions to
+.B schilytools@mlists.in-berlin.de
+or open a ticket at
+.BR https://codeberg.org/schilytools/schilytools/issues .
+.PP
+The mailing list archive may be found at:
+.PP
+.nf
+.BR https://mlists.in-berlin.de/mailman/listinfo/schilytools-mlists.in-berlin.de .
+.fi
+
+.SH AUTHORS
 .LP
 .B librmt
 has been written in 1990 by J\*org Schilling.
@@ -335,19 +342,19 @@ In 1995, support for
 .B RMT VERSION 1
 has been added.
 .B librmt
-is still maintained by J\*org Schilling.
+is now maintained by the schilytools project authors.
+
+.SH "SOURCE DOWNLOAD"
+The source code for
+.B librmt
+is included in the
+.B schilytools
+project and may be retrieved from the
+.B schilytools
+project at Codeberg at
 .LP
-.nf
-J\*org Schilling
-Seestr. 110
-D\-13353 Berlin
-Germany
-.fi
-.PP
-Mail bugs and suggestions to:
-.PP
-.B
-joerg.schilling@fokus.fraunhofer.de
-or
-.B
-joerg@schily.net
+.BR https://codeberg.org/schilytools/schilytools .
+.LP
+The download directory is
+.LP
+.BR https://codeberg.org/schilytools/schilytools/releases .

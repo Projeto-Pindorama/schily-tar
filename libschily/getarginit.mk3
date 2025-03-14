@@ -1,17 +1,17 @@
-#ident %W% %E% %Q%
+#ident @(#)getarginit.mk3	1.1 19/11/04 
 ###########################################################################
 # Sample makefile for installing manual pages
 ###########################################################################
-SRCROOT=	../..
+SRCROOT=	..
 RULESDIR=	RULES
 include		$(SRCROOT)/$(RULESDIR)/rules.top
 ###########################################################################
 
 MANDIR=		man
-TARGETMAN=	match
-MANSECT=	$(MANSECT_CMD)
-MANSUFFIX=	$(MANSUFF_CMD)
-MANFILE=	match.1
+TARGETMAN=	getarginit
+MANSECT=	$(MANSECT_LIB)
+MANSUFFIX=	$(MANSUFF_LIB)
+MANFILE=	getarginit.3
 
 ###########################################################################
 include		$(SRCROOT)/$(RULESDIR)/rules.man

@@ -1,6 +1,6 @@
-/* @(#)snprintf.c	1.15 18/01/17 Copyright 1985, 1996-2018 J. Schilling */
+/* @(#)snprintf.c	1.16 19/10/19 Copyright 1985, 1996-2019 J. Schilling */
 /*
- *	Copyright (c) 1985, 1996-2018 J. Schilling
+ *	Copyright (c) 1985, 1996-2019 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -68,9 +68,9 @@ snprintf(char *buf, size_t maxcnt, const char *form, ...)
 #else
 EXPORT int
 snprintf(buf, maxcnt, form, va_alist)
-	char	*buf;
-	unsigned maxcnt;
-	char	*form;
+	char		*buf;
+	size_t		maxcnt;
+	const char	*form;
 	va_dcl
 #endif
 {

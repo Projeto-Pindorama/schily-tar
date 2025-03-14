@@ -1,8 +1,8 @@
-/* @(#)avoffset.c	1.35 17/08/01 Copyright 1987, 1995-2017 J. Schilling */
+/* @(#)avoffset.c	1.39 21/04/28 Copyright 1987, 1995-2021 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)avoffset.c	1.35 17/08/01 Copyright 1987, 1995-2017 J. Schilling";
+	"@(#)avoffset.c	1.39 21/04/28 Copyright 1987, 1995-2021 J. Schilling";
 #endif
 /*
  * This program is a tool to generate the file "avoffset.h".
@@ -13,7 +13,7 @@ static	UConst char sccsid[] =
  *	FP_INDIR	- number of stack frames above main()
  *			  before encountering a NULL pointer.
  *
- *	Copyright (c) 1987, 1995-2017 J. Schilling
+ *	Copyright (c) 1987, 1995-2021 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -48,6 +48,7 @@ handler(signo)
 	int	signo;
 {
 	fprintf(stderr, "Warning: Cannot scan stack on this environment.\n");
+	fprintf(stderr, "This is not an error, we just disable stack scannig.\n");
 
 	printf("\n#endif	/* __AVOFFSET_H */\n");
 	fflush(stdout);
@@ -62,7 +63,7 @@ main(ac, av)
 {
 	int		stdir;
 #ifdef	HAVE_SCANSTACK
-	register struct frame *fp;
+	volatile struct frame *fp;
 	register int	i = 0;
 	register int	o = 0;
 
@@ -168,13 +169,15 @@ main(ac, av)
 	return (0);	/* keep lint happy */
 }
 
+#ifndef	__NO_INL__
 #if	__clang__ || (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ >= 2)
 #define	__NO_INL__	__attribute__((noinline))
 #else
 #define	__NO_INL__
 #endif
+#endif
 
-LOCAL int __NO_INL__
+LOCAL __NO_INL__ int
 stack_direction(lp)
 	long	*lp;
 {

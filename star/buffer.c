@@ -1,13 +1,14 @@
-/* @(#)buffer.c	1.196 19/03/26 Copyright 1985, 1995, 2001-2019 J. Schilling */
+/* @(#)buffer.c	1.199 20/07/08 Copyright 1985, 1995, 2001-2020 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)buffer.c	1.196 19/03/26 Copyright 1985, 1995, 2001-2019 J. Schilling";
+	"@(#)buffer.c	1.199 20/07/08 Copyright 1985, 1995, 2001-2020 J. Schilling";
 #endif
 /*
  *	Buffer handling routines
  *
- *	Copyright (c) 1985, 1995, 2001-2019 J. Schilling
+ *	Copyright (c) 1985, 1995, 2001-2020 J. Schilling
+ *	Copyright (c) 2022-2023 the schilytools team
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -83,9 +84,9 @@ static	UConst char sccsid[] =
 #endif
 
 long	bigcnt	= 0;
-int	bigsize	= 0;		/* Tape block size (may shrink < bigbsize) */
-int	bigbsize = 0;		/* Big buffer size */
-int	bufsize	= 0;		/* Available buffer size */
+long	bigsize	= 0;		/* Tape block size (may shrink < bigbsize) */
+long	bigbsize = 0;		/* Big buffer size */
+long	bufsize	= 0;		/* Available buffer size */
 char	*bigbase = NULL;
 char	*bigbuf	= NULL;
 char	*bigptr	= NULL;
@@ -164,38 +165,40 @@ EXPORT	BOOL	openremote	__PR((void));
 EXPORT	void	opentape	__PR((void));
 EXPORT	void	closetape	__PR((void));
 EXPORT	void	changetape	__PR((BOOL donext));
+EXPORT	void	runnewvolscript	__PR((int volno, int nindex));
 EXPORT	void	nextitape	__PR((void));
 EXPORT	void	nextotape	__PR((void));
-EXPORT	int	startvol	__PR((char *buf, int amount));
-EXPORT	void	newvolhdr	__PR((char *buf, int amount, BOOL do_fifo));
+EXPORT	long	startvol	__PR((char *buf, long amount));
+EXPORT	void	newvolhdr	__PR((char *buf, long amount, BOOL do_fifo));
 #ifdef	FIFO
-LOCAL	void	fbit_ffss	__PR((bitstr_t *name, int startb, int stopb, int *value));
+LOCAL	void	fbit_ffss	__PR((bitstr_t *name, long startb, long stopb,
+					long *value));
 LOCAL	BOOL	fifo_hpos	__PR((char *buf, off_t *posp));
 #endif
 EXPORT	void	initbuf		__PR((int nblocks));
 EXPORT	void	markeof		__PR((void));
 EXPORT	void	syncbuf		__PR((void));
-EXPORT	int	peekblock	__PR((char *buf, int amount));
-EXPORT	int	readblock	__PR((char *buf, int amount));
-LOCAL	int	readtblock	__PR((char *buf, int amount));
+EXPORT	long	peekblock	__PR((char *buf, long amount));
+EXPORT	long	readblock	__PR((char *buf, long amount));
+LOCAL	long	readtblock	__PR((char *buf, long amount));
 LOCAL	void	readbuf		__PR((void));
-EXPORT	int	readtape	__PR((char *buf, int amount));
+EXPORT	ssize_t	readtape	__PR((char *buf, size_t amount));
 EXPORT	void	filltcb		__PR((TCB *ptb));
 EXPORT	void	movetcb		__PR((TCB *from_ptb, TCB *to_ptb));
-EXPORT	void	*get_block	__PR((int amount));
-EXPORT	void	put_block	__PR((int amount));
+EXPORT	void	*get_block	__PR((long amount));
+EXPORT	void	put_block	__PR((long amount));
 EXPORT	char	*writeblock	__PR((char *buf));
-EXPORT	int	writetape	__PR((char *buf, int amount));
-LOCAL	void	writebuf	__PR((int amount));
+EXPORT	ssize_t	writetape	__PR((char *buf, size_t amount));
+LOCAL	void	writebuf	__PR((long amount));
 LOCAL	void	flushbuf	__PR((void));
 EXPORT	void	writeempty	__PR((void));
 EXPORT	void	weof		__PR((void));
-EXPORT	void	buf_sync	__PR((int size));
+EXPORT	void	buf_sync	__PR((long size));
 EXPORT	void	buf_drain	__PR((void));
-EXPORT	int	buf_wait	__PR((int amount));
-EXPORT	void	buf_wake	__PR((int amount));
-EXPORT	int	buf_rwait	__PR((int amount));
-EXPORT	void	buf_rwake	__PR((int amount));
+EXPORT	long	buf_wait	__PR((long amount));
+EXPORT	void	buf_wake	__PR((long amount));
+EXPORT	long	buf_rwait	__PR((long amount));
+EXPORT	void	buf_rwake	__PR((long amount));
 EXPORT	void	buf_resume	__PR((void));
 EXPORT	void	backtape	__PR((void));
 EXPORT	int	mtioctl		__PR((int cmd, int count));
@@ -212,6 +215,7 @@ EXPORT	void	die		__PR((int err));
 LOCAL	void	cldhandler	__PR((int sig, siginfo_t *sip, void *context));
 LOCAL	void	handlecld	__PR((void));
 #endif
+LOCAL	char	*get_zip_prog	__PR((void));
 LOCAL	void	compressopen	__PR((void));
 LOCAL	void	compressclose	__PR((void));
 
@@ -286,6 +290,7 @@ opentape()
 	extern	dev_t	tape_dev;
 	extern	ino_t	tape_ino;
 	extern	BOOL	tape_isreg;
+	extern	Llong	mtskip;
 
 	if (copyflag || (nullout && !(uflag || rflag))) {
 		tarfiles[tarfindex] = "null";
@@ -310,7 +315,7 @@ opentape()
 		 * remote server, our rmt client code will mask off all
 		 * non portable bits. The remote rmt server defaults to
 		 * O_BINARY as the client (we) may not know about O_BINARY.
-		 * XXX Should we add an option that allows to specify O_TRUNC?
+		 * XXX Should we add an option that allows one to specify O_TRUNC?
 		 */
 		while (rmtopen(remfd, remfn, (cflag ? O_RDWR|O_CREAT:O_RDONLY)|O_BINARY) < 0) {
 			if (!wready || n++ > 12 ||
@@ -353,7 +358,7 @@ opentape()
 
 		n = 0;
 		/*
-		 * XXX Should we add an option that allows to specify O_TRUNC?
+		 * XXX Should we add an option that allows one to specify O_TRUNC?
 		 */
 		while ((tarf = lfilemopen(tarfiles[tarfindex],
 						cflag?"rwcub":"rub",
@@ -464,6 +469,11 @@ opentape()
 	if (Zflag || zflag || bzflag || lzoflag ||
 	    p7zflag || xzflag || lzipflag || zstdflag || lzmaflag || freezeflag ||
 	    compress_prg) {
+		extern long	iskip;
+
+		iskip = 0;	/* We cannot skip in compressed archives. */
+		mtskip = 0;	/* We cannot skip in compressed archives. */
+
 		if (isremote)
 			comerrno(EX_BAD, "Cannot compress remote archives (yet).\n");
 		/*
@@ -473,6 +483,19 @@ opentape()
 			compressopen();
 		else
 			comerrno(EX_BAD, "Can only compress files.\n");
+
+	} else if (stats->volno == 1 && mtskip) {
+		if (tape_isreg) {
+			if (mtseek((off_t)mtskip * TBLOCK, SEEK_SET) == -1)
+				excomerr("Cannot seek input for mtskip=.\n");
+			mtskip = 0;
+		} else if (mtioctl(MTNOP, 0) >= 0) {
+		extern	int	nblocks;
+			int	count = mtskip / nblocks;
+
+			if (mtioctl(MTFSR, count) == -1)
+				excomerr("Cannot position tape for mtskip=.\n");
+		}
 	}
 
 #ifdef	timerclear
@@ -557,8 +580,6 @@ changetape(donext)
 	 * XXX ufsdump.
 	 */
 	if (newvol_script) {
-		char	scrbuf[PATH_MAX];
-
 		fflush(vpr);
 		if (!donext) {
 			errmsgno(EX_BAD,
@@ -566,14 +587,7 @@ changetape(donext)
 				tarfiles[nextindex]);
 			comerrno(EX_BAD, "Aborting.\n");
 		}
-		/*
-		 * The script is called with the next volume # and volume name
-		 * as argument.
-		 */
-		js_snprintf(scrbuf, sizeof (scrbuf), "%s '%d' '%s'",
-				newvol_script,
-				stats->volno, tarfiles[nextindex]);
-		system(scrbuf);
+		runnewvolscript(stats->volno, nextindex);
 	} else {
 		int	len;
 
@@ -594,6 +608,28 @@ changetape(donext)
 	tarfindex = nextindex;
 	openremote();
 	opentape();
+}
+
+EXPORT void
+runnewvolscript(volno, nindex)
+	int	volno;
+	int	nindex;
+{
+	char	scrbuf[PATH_MAX];
+
+	if (!newvol_script)
+		return;
+
+	if (nindex >= ntarfiles)
+		nindex = 0;
+	/*
+	 * The script is called with the next volume # and volume name
+	 * as argument.
+	 */
+	js_snprintf(scrbuf, sizeof (scrbuf), "%s '%d' '%s'",
+			newvol_script,
+			volno, tarfiles[nindex]);
+	system(scrbuf);
 }
 
 /*
@@ -649,10 +685,10 @@ nextotape()
 /*
  * Called from writetape()
  */
-EXPORT int
+EXPORT long
 startvol(buf, amount)
 	char	*buf;		/* The original buffer address		*/
-	int	amount;		/* The related requested transfer count	*/
+	long	amount;		/* The related requested transfer count	*/
 {
 	char	*obuf = bigbuf;
 	char	*optr = bigptr;
@@ -668,7 +704,7 @@ extern	m_head	*mp;
 		comerrno(EX_BAD, "Panic: recursive media change requested!\n");
 	if (amount > bigsize) {
 		comerrno(EX_BAD,
-		"Panic: trying to write more than bs (%d > %d)!\n",
+		"Panic: trying to write more than bs (%ld > %ld)!\n",
 		amount, bigsize);
 	}
 #ifdef	FIFO
@@ -733,7 +769,7 @@ extern	m_head	*mp;
 EXPORT void
 newvolhdr(buf, amount, do_fifo)
 	char	*buf;		/* The original buffer address		*/
-	int	amount;		/* The related requested transfer count	*/
+	long	amount;		/* The related requested transfer count	*/
 	BOOL	do_fifo;
 {
 extern	m_head	*mp;
@@ -810,11 +846,11 @@ extern	m_head	*mp;
 LOCAL void
 fbit_ffss(name, startb, stopb, value)
 	register bitstr_t *name;
-	register int	startb;
-	register int	stopb;
-	register int	*value;
+	register long	startb;
+	register long	stopb;
+	register long	*value;
 {
-	bit_ffss(name, startb, stopb, value);
+	bit_lffss(name, startb, stopb, value);
 }
 
 /*
@@ -825,10 +861,10 @@ fifo_hpos(buf, posp)
 	char	*buf;
 	off_t	*posp;
 {
-		int	startb;
-		int	stopb;
-		int	endb;
-		int	bitpos = -1;
+		long	startb;
+		long	stopb;
+		long	endb;
+		long	bitpos = -1;
 	extern	m_head	*mp;
 
 	startb = (buf - mp->base) / TBLOCK;
@@ -973,7 +1009,7 @@ marktcb(addr)
 {
 #ifdef	FIFO
 	extern	m_head  *mp;
-	register int	bit;
+	register long	bit;
 #endif
 	if (!multivol || !use_fifo)
 		return;
@@ -987,7 +1023,7 @@ marktcb(addr)
 		errmsgno(EX_BAD, "TCB offset not mudulo 512.\n");
 	bit /= TBLOCK;
 	if (bit_test(mp->bmap, bit))	/* Remove this paranoia test in future. */
-		errmsgno(EX_BAD, "Bit %d is already set.\n", bit);
+		errmsgno(EX_BAD, "Bit %ld is already set.\n", bit);
 	bit_set(mp->bmap, bit);
 #endif
 }
@@ -1025,12 +1061,12 @@ syncbuf()
  * Called from get_tcb() for checking the archive format of the first
  * tape block.
  */
-EXPORT int
+EXPORT long
 peekblock(buf, amount)
 	register char	*buf;
-	register int	amount;
+	register long	amount;
 {
-	register int	n;
+	register long	n;
 
 	if ((n = buf_rwait(amount)) == 0)
 		return (EOF);
@@ -1052,12 +1088,12 @@ peekblock(buf, amount)
  *
  * Called from get_tcb() and from the sparse handling functions in hole.c
  */
-EXPORT int
+EXPORT long
 readblock(buf, amount)
 	register char	*buf;
-	register int	amount;
+	register long	amount;
 {
-	register int	n;
+	register long	n;
 
 	if ((n = peekblock(buf, amount)) != EOF) {
 		buf_rwake(n);
@@ -1074,12 +1110,12 @@ readblock(buf, amount)
  * Low level routine to read a TAPE Block (usually 10k)
  * Called from opentape() to check the compression and from readtape().
  */
-LOCAL int
+LOCAL long
 readtblock(buf, amount)
 	char	*buf;
-	int	amount;
+	long	amount;
 {
-	int	cnt;
+	long	cnt;
 
 	stats->reading = TRUE;
 	if (isremote) {
@@ -1112,15 +1148,15 @@ readbuf()
  * Mid level function to read a tape block (usually 10k)
  * Called from the fifo fill code and from readbuf().
  */
-EXPORT int
+EXPORT ssize_t
 readtape(buf, amount)
 	char	*buf;
-	int	amount;
+	size_t	amount;
 {
-	int	amt;
-	int	cnt;
+	size_t	amt;
+	ssize_t	cnt;
 	char	*bp;
-	int	size;
+	size_t	size;
 static	BOOL	teof = FALSE;
 
 	if (teof)
@@ -1141,7 +1177,7 @@ static	BOOL	teof = FALSE;
 	if (amt == 0)
 		return (amt);
 	if (amt < TBLOCK) {
-		errmsgno(EX_BAD, "Error reading '%s' size (%d) too small.\n",
+		errmsgno(EX_BAD, "Error reading '%s' size (%zd) too small.\n",
 						tarfiles[tarfindex], amt);
 		/*
 		 * Do not continue after we did read less than 512 bytes.
@@ -1153,7 +1189,7 @@ static	BOOL	teof = FALSE;
 	 */
 	if (stats->swapflg < 0) {
 		if ((amt % TBLOCK) != 0)
-			comerrno(EX_BAD, "Invalid blocksize %d bytes.\n", amt);
+			comerrno(EX_BAD, "Invalid blocksize %zd bytes.\n", amt);
 		if (amt < amount) {
 			stats->blocksize = bigsize = amt;
 			stats->nblocks = bigsize/TBLOCK;
@@ -1186,7 +1222,7 @@ static	BOOL	teof = FALSE;
 void
 swabbytes(bp, cnt)
 	register char	*bp;
-	register int	cnt;
+	register long	cnt;
 {
 	register char	c;
 
@@ -1236,7 +1272,7 @@ movetcb(from_ptb, to_ptb)
  */
 EXPORT void *
 get_block(amount)
-	int	amount;
+	long	amount;
 {
 	if (buf_wait(amount) < amount)
 		return ((void *)NULL);
@@ -1249,7 +1285,7 @@ get_block(amount)
  */
 EXPORT void
 put_block(amount)
-	int	amount;
+	long	amount;
 {
 	buf_wake(amount);
 }
@@ -1276,12 +1312,12 @@ writeblock(buf)
  * Mid level function to write a tape block (usually 10k)
  * Called from the fifo fill output code and from writebuf().
  */
-EXPORT int
+EXPORT ssize_t
 writetape(buf, amount)
 	char	*buf;
-	int	amount;
+	size_t	amount;
 {
-	int	cnt;
+	ssize_t	cnt;
 	int	err = 0;
 					/* hartes oder weiches EOF ???  */
 					/* d.h. < 0 oder <= 0		*/
@@ -1346,7 +1382,7 @@ writetape(buf, amount)
  */
 LOCAL void
 writebuf(amount)
-	int	amount;
+	long	amount;
 {
 	long	cnt;
 
@@ -1437,7 +1473,7 @@ weof()
  */
 EXPORT void
 buf_sync(size)
-	int	size;
+	long	size;
 {
 #ifdef	FIFO
 	if (use_fifo) {
@@ -1445,7 +1481,7 @@ buf_sync(size)
 	} else
 #endif
 	if (size) {
-		int	amt = 0;
+		long	amt = 0;
 
 		if ((bigcnt % size) != 0)
 			amt = size - bigcnt%size;
@@ -1478,9 +1514,9 @@ buf_drain()
  * Wait until we may put amount bytes into the buffer/fifo.
  * The returned count may be lower. Callers need to be prepared about this.
  */
-EXPORT int
+EXPORT long
 buf_wait(amount)
-	int	amount;
+	long	amount;
 {
 #ifdef	FIFO
 	if (use_fifo) {
@@ -1501,7 +1537,7 @@ buf_wait(amount)
  */
 EXPORT void
 buf_wake(amount)
-	int	amount;
+	long	amount;
 {
 #ifdef	FIFO
 	if (use_fifo) {
@@ -1526,11 +1562,11 @@ buf_wake(amount)
  * Wait until we may read amount bytes from the buffer/fifo.
  * The returned count may be lower. Callers need to be prepared about this.
  */
-EXPORT int
+EXPORT long
 buf_rwait(amount)
-	int	amount;
+	long	amount;
 {
-	int	cnt;
+	long	cnt;
 
 again:
 #ifdef	FIFO
@@ -1556,7 +1592,7 @@ again:
  */
 EXPORT void
 buf_rwake(amount)
-	int	amount;
+	long	amount;
 {
 #ifdef	FIFO
 	if (use_fifo) {
@@ -1601,7 +1637,7 @@ backtape()
 
 	if (debug) {
 		error("Blocks: %lld\n", tblocks());
-		error("filepos: %lld seeking to: %lld bigsize: %d\n",
+		error("filepos: %lld seeking to: %lld bigsize: %ld\n",
 		(Llong)mtseek((off_t)0, SEEK_CUR),
 		(Llong)mtseek((off_t)0, SEEK_CUR) - (Llong)stats->lastsize, bigsize);
 	}
@@ -2027,39 +2063,48 @@ handlecld()
 }
 #endif	/* USE_SIGCLD */
 
+LOCAL char *
+get_zip_prog()
+{
+	if (compress_prg)
+		return (compress_prg);
+	else if (bzflag)
+		return ("bzip2");
+	else if (Zflag)
+		return ("compress");
+	else if (lzoflag)
+		return ("lzop");
+	else if (p7zflag)
+		return ("p7zip");
+	else if (xzflag)
+		return ("xz");
+	else if (lzipflag)
+		return ("lzip");
+	else if (zstdflag)
+		return ("zstd");
+	else if (lzmaflag)
+		return ("lzma");
+	else if (freezeflag)
+		return ("freeze");
+	else
+		return ("gzip");
+}
+
 LOCAL void
 compressopen()
 {
 #ifdef	HAVE_FORK
 	FILE	*pp[2];
 	int	mypid;
-	char	*zip_prog = "gzip";
-
-	if (compress_prg)
-		zip_prog = compress_prg;
-	else if (bzflag)
-		zip_prog = "bzip2";
-	else if (Zflag)
-		zip_prog = "compress";
-	else if (lzoflag)
-		zip_prog = "lzop";
-	else if (p7zflag)
-		zip_prog = "p7zip";
-	else if (xzflag)
-		zip_prog = "xz";
-	else if (lzipflag)
-		zip_prog = "lzip";
-	else if (zstdflag)
-		zip_prog = "zstd";
-	else if (lzmaflag)
-		zip_prog = "lzma";
-	else if (freezeflag)
-		zip_prog = "freeze";
+	char	*zip_prog;
+	char 	**args;
 
 	multblk = TRUE;
 
 	if (cflag && (uflag || rflag))
 		comerrno(EX_BAD, "Cannot update compressed archives.\n");
+
+	zip_prog = get_zip_prog();
 
 #ifdef __DJGPP__
 	if (cflag) {
@@ -2112,7 +2157,6 @@ compressopen()
 		comerr("Compress fork failed\n");
 	if (mypid == 0) {
 		FILE	*null;
-		char	*flg = getenv("STAR_COMPRESS_FLAG"); /* Temporary ? */
 
 		signal(SIGQUIT, SIG_IGN);
 		if (cflag)
@@ -2134,10 +2178,20 @@ compressopen()
 			goto err;
 		}
 
-		if (cflag)
-			fexecl(zip_prog, pp[0], tarf, null, zip_prog, flg, (char *)NULL);
-		else
-			fexecl(zip_prog, tarf, pp[1], null, zip_prog, "-d", (char *)NULL);
+		if (cflag) {
+			char	*flg = getenv("STAR_COMPRESS_FLAG");
+
+			args = get_args_for_helper(zip_prog, "[compress]", NULL, flg);
+			if (args == NULL)
+				comerr("Can't get flags for %s", zip_prog);
+			fexecv(args[0], pp[0], tarf, null, -1 , args);
+		} else {
+			args = get_args_for_helper(zip_prog, "[decompress]", "-d", NULL);
+			if (args == NULL)
+				comerr("Can't get flags for %s", zip_prog);
+			fexecv(args[0], tarf, pp[1], null, -1 , args);
+		}
+
 err:
 		errmsg("Compress: exec of '%s' failed\n", zip_prog);
 		_exit(-1);
@@ -2170,30 +2224,8 @@ compressclose()
 			FILE	*zipf;
 			int	cnt = -1;
 			char	buf[8192];
-			char	*zip_prog = "gzip";
 
-			if (compress_prg)
-				zip_prog = compress_prg;
-			else if (bzflag)
-				zip_prog = "bzip2";
-			else if (Zflag)
-				zip_prog = "compress";
-			else if (lzoflag)
-				zip_prog = "lzop";
-			else if (p7zflag)
-				zip_prog = "p7zip";
-			else if (xzflag)
-				zip_prog = "xz";
-			else if (lzipflag)
-				zip_prog = "lzip";
-			else if (zstdflag)
-				zip_prog = "zstd";
-			else if (lzmaflag)
-				zip_prog = "lzma";
-			else if (freezeflag)
-				zip_prog = "freeze";
-
-			js_snprintf(zip_cmd, sizeof (zip_cmd), "%s.exe", zip_prog);
+			js_snprintf(zip_cmd, sizeof (zip_cmd), "%s.exe", get_zip_prog());
 
 			dup2(fileno(compress_tarf_save), STDOUT_FILENO);
 

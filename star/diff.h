@@ -1,8 +1,8 @@
-/* @(#)diff.h	1.16 18/04/24 Copyright 1993-2018 J. Schilling */
+/* @(#)diff.h	1.18 19/11/02 Copyright 1993-2019 J. Schilling */
 /*
  *	Definitions for the taylorable diff command
  *
- *	Copyright (c) 1993-2018 J. Schilling
+ *	Copyright (c) 1993-2019 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -57,6 +57,7 @@ extern "C" {
 #define	D_ANTIME	0x1000000
 #define	D_MNTIME	0x2000000
 #define	D_CNTIME	0x4000000
+#define	D_DNLINK	0x8000000
 #define	D_MAX		0x80000000
 
 /*
@@ -67,6 +68,36 @@ extern "C" {
 #define	D_ALL	(~0L);
 
 extern	long	diffopts;
+
+typedef struct diffs {
+	int	d_perm;
+	int	d_type;
+	int	d_nlink;
+	int	d_dnlink;
+	int	d_symperm;
+	int	d_uid;
+	int	d_gid;
+	int	d_uname;
+	int	d_gname;
+	int	d_size;
+	int	d_data;
+	int	d_rdev;
+	int	d_hlink;
+	int	d_slink;
+	int	d_slpath;
+	int	d_sparse;
+	int	d_atime;
+	int	d_mtime;
+	int	d_ctime;
+	int	d_antime;
+	int	d_mntime;
+	int	d_cntime;
+	int	d_lmtime;
+	int	d_dir;
+	int	d_acl;
+	int	d_xattr;
+	int	d_fflags;
+} diffs_t;
 
 #ifdef	__cplusplus
 }

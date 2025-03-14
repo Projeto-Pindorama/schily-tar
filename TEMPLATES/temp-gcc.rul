@@ -1,6 +1,6 @@
-#ident "@(#)temp-gcc.rul	1.4 14/03/31 "
+#ident "@(#)temp-gcc.rul	1.6 21/06/23 "
 ###########################################################################
-# Written 1997 by J. Schilling
+# Written 1997-2019 by J. Schilling
 ###########################################################################
 #
 # Platform dependent MACROS for unknown GCC systems
@@ -24,11 +24,11 @@ include $(SRCROOT)/$(RULESDIR)/rules.prg
 ###########################################################################
 include $(SRCROOT)/$(RULESDIR)/cc-$(C_ARCH).rul
 
-OSDEFS=
+OSDEFS +=
 
 KDEFINES=	-DKERNEL -D_KERNEL
 
-SHL_SUFFIX=	.so.1.0
+SHL_SUFFIX=	.so.$(DYNMAJOR).$(DYNMINOR)
 
 #LIB_SOCKET=	-lsocket -lnsl -ldl
 LIB_SOCKET=	
@@ -45,4 +45,6 @@ ARFLAGS=	cr
 LORDER=		echo
 TSORT=		cat
 
+_MKDIR=		$(_MKDIR_SH)
 MKDIR=		$(MKDIR_SH)
+INSMKDIR=	$(INSMKDIR_SH)

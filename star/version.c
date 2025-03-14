@@ -1,11 +1,12 @@
-/* @(#)version.c	1.8 19/04/01 Copyright 2018-2019 J. Schilling */
+/* @(#)version.c	1.22 21/07/03 Copyright 2018-2020 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)version.c	1.8 19/04/01 Copyright 2018-2019 J. Schilling";
+	"@(#)version.c	1.22 21/07/03 Copyright 2018-2020 J. Schilling";
 #endif
 /*
- *	Copyright (c) 2018-2019 J. Schilling
+ *	Copyright (c) 2018-2020 J. Schilling
+ *	Copyright (c) 2022-2023 the schilytools team
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -21,5 +22,5 @@ static	UConst char sccsid[] =
  * file and include the License file CDDL.Schily.txt from this distribution.
  */
 
-char	strvers[] = "1.6";		/* The pure version string	*/
-char	dvers[]	  = "2019/04/01";	/* Version date			*/
+char	strvers[] = "1.7.0";		/* The pure version string	*/
+char	dvers[]	  = "2023/01/11";	/* Version date			*/

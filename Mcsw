@@ -1,4 +1,4 @@
-#ident %W% %E% %Q%
+#ident @(#)Mcsw	1.6 20/08/14 
 ###########################################################################
 deftgt:
 SRCROOT=	.
@@ -13,14 +13,15 @@ include		$(SRCROOT)/$(RULESDIR)/rules.top
 PROJECTNAME=	CSWschily-10.06.2006
 TARGET_AR=	opt-schily-0.99
 INS_BASE=	/opt/csw
-COPTX="-DSEEK_DATA=3 -DSEEK_HOLE=4 -D_PC_MIN_HOLE_SIZE=21 -DNO_DOIT"
+COPTX="-DSEEK_DATA=3 -DSEEK_HOLE=4 -D_PC_MIN_HOLE_SIZE=21 -DNO_DOIT -DNO_DEFAULTS_PATH"
+PKG_TYPE=CSW
 
 deftgt:
-	$(MAKE) -f Mcsw INS_BASE=$(INS_BASE) COPTX=$(COPTX)		all
-	$(MAKE) -f Mcsw INS_BASE=$(INS_BASE) COPTX=$(COPTX)		all
-	#$(MAKE) -f Mcsw INS_BASE=/	     COPTX=$(COPTX)		pkg1
-	$(MAKE) -f Mcsw INS_BASE=$(INS_BASE) COPTX=$(COPTX)		pkg1
-	fakeroot '$(MAKE) -f Mcsw INS_BASE=$(INS_BASE) COPTX=$(COPTX)	package PKGTYPE=CSW'
+	"$(MAKE)" -f Mcsw INS_BASE=$(INS_BASE) INS_RBASE=$(INS_BASE) COPTX=$(COPTX)		all
+	"$(MAKE)" -f Mcsw INS_BASE=$(INS_BASE) INS_RBASE=$(INS_BASE) COPTX=$(COPTX)		all
+	#"$(MAKE)" -f Mcsw INS_BASE=/	     COPTX=$(COPTX)		pkg1
+	"$(MAKE)" -f Mcsw INS_BASE=$(INS_BASE) INS_RBASE=$(INS_BASE) COPTX=$(COPTX)		pkg1
+	fakeroot '"$(MAKE)" -f Mcsw INS_BASE=$(INS_BASE) INS_RBASE=$(INS_BASE) COPTX=$(COPTX)	package PKGTYPE=$(PKG_TYPE)'
 
 STRIPLIST=      ./$(INS_BASE)/*bin/* ./$(INS_BASE)/ccs/bin/*
 STRIPXLIST=      ./$(INS_BASE)/lib/*.so.*
@@ -29,9 +30,7 @@ MAKE_FILE=	-f Mcsw
 PRE_INST_CMDS=	mkdir -p etc/default
 POST_INST_CMDS=	mkdir -p usr/bin; \
 		(cd usr/bin; ln -s ../../$(INS_BASE)/bin/* . ; rm -f cut paste label tar mt); \
-		(cd ./$(INS_BASE)/bin; ln -s ../ccs/bin/sccs sccs); \
-		mkdir -p usr/ccs/bin; \
-		mv ./$(INS_BASE)/etc/default/* etc/default
+		mkdir -p usr/ccs/bin;
 POST_STRIP_CMDS=	chmod -f u=rwx,g=x,o=x,u+s \
 		./$(INS_BASE)/bin/readcd ./$(INS_BASE)/bin/cdda2wav \
 		./$(INS_BASE)/bin/smt ./$(INS_BASE)/bin/sdd \

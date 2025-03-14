@@ -1,6 +1,6 @@
-/* @(#)fetchdir.h	1.8 16/03/10 Copyright 2002-2016 J. Schilling */
+/* @(#)fetchdir.h	1.10 19/11/28 Copyright 2002-2019 J. Schilling */
 /*
- *	Copyright (c) 2002-2016 J. Schilling
+ *	Copyright (c) 2002-2019 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -19,39 +19,42 @@
 #ifndef _SCHILY_FETCHDIR_H
 #define	_SCHILY_FETCHDIR_H
 
+#ifndef	_SCHILY_TYPES_H
+#include <schily/types.h>
+#endif
 #ifndef	_SCHILY_DIRENT_H
 #include <schily/dirent.h>		/* Includes mconfig.h if needed */
 #endif
 
 /*
  * The original value used to fill the info byte before each name was ^A (1).
- * We thus need to make this value the "unknown" type value and this  finally
+ * We thus need to make this value the "unknown" type value and this finally
  * results in the FDT_* values be 1 + the UNIX file type value.
  */
-#define	FDT_UNKN	 1
-#define	FDT_FIFO	 2
-#define	FDT_CHR		 3
-#define	FDT_DIR		 5
-#define	FDT_BLK		 7
-#define	FDT_REG		 9
-#define	FDT_LNK		11
-#define	FDT_SOCK	13
-#define	FDT_WHT		15
+#define	FDT_UNKN	 1	/* Unknown, e.g dirent d_type is missing */
+#define	FDT_FIFO	 2	/* A FIFO special named pipe		*/
+#define	FDT_CHR		 3	/* A character special device node	*/
+#define	FDT_DIR		 5	/* A directory				*/
+#define	FDT_BLK		 7	/* A block special device node		*/
+#define	FDT_REG		 9	/* A regular file			*/
+#define	FDT_LNK		11	/* A symbolic link			*/
+#define	FDT_SOCK	13	/* A socket special			*/
+#define	FDT_WHT		15	/* A whiteout directory entry		*/
 
 #ifdef	__cplusplus
 extern "C" {
 #endif
 
-extern	char	*fetchdir	__PR((char *dir, int *entp, int *lenp,
+extern	char	*fetchdir	__PR((char *dir, size_t *entp, size_t *lenp,
 					ino_t **inop));
-extern	char	*dfetchdir	__PR((DIR *dir, char *__dirname, int *entp,
-					int *lenp, ino_t **inop));
+extern	char	*dfetchdir	__PR((DIR *dir, char *__dirname, size_t *entp,
+					size_t *lenp, ino_t **inop));
 extern	int	fdircomp	__PR((const void *p1, const void *p2));
-extern	char	**sortdir	__PR((char *dir, int *entp));
-extern	int	cmpdir		__PR((int ents1, int ents2,
+extern	char	**sortdir	__PR((char *dir, size_t *entp));
+extern	int	cmpdir		__PR((size_t ents1, size_t ents2,
 					char **ep1, char **ep2,
 					char **oa, char **od,
-					int *alenp, int *dlenp));
+					size_t *alenp, size_t *dlenp));
 
 #ifdef	__cplusplus
 }

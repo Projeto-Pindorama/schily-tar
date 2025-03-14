@@ -1,13 +1,14 @@
-/* @(#)suntar.c	1.43 19/03/27 Copyright 1989, 2003-2019 J. Schilling */
+/* @(#)suntar.c	1.44 19/09/27 Copyright 1989, 2003-2019 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	const char _s_sccsid[] =
-	"@(#)suntar.c	1.43 19/03/27 Copyright 1989, 2003-2019 J. Schilling";
+	"@(#)suntar.c	1.44 19/09/27 Copyright 1989, 2003-2019 J. Schilling";
 #endif
 /*
  *	Solaris TAR specific routines for star main program.
  *
  *	Copyright (c) 1989, 2003-2019 J. Schilling
+ *	Copyright (c) 2022 the schilytools team
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -254,7 +255,7 @@ signed	char	archive	 = -1;		/* On IRIX, we have unsigned chars by default */
 	/*
 	 * Also check for Sun defaults
 	 */
-	star_defaults(&fs, &no_fsync, DFLT_FILE);
+	star_defaults(&fs, &no_fsync, &secure_links, DFLT_FILE);
 }
 
 LOCAL void
@@ -305,7 +306,7 @@ usage(ret)
 	error("\t-b #\t\tset blocking factor to #x512 Bytes (default 20)\n");
 	error("\t-B\t\tperform multiple reads (needed on pipes)\n");
 	error("\t-D\t\ttreat data change errors as warnings only\n");
-	error("\t-e\t\texit immediately if unexpeted errors ocur\n");
+	error("\t-e\t\texit immediately if unexpected errors ocur\n");
 	error("\t-E\t\tWrite a tarfile with extended headers\n");
 	error("\t-f nm\t\tuse 'nm' as tape instead of stdin/stdout\n");
 	error("\t-F,-FF,-FFF,...\tdo not store/create SCCS/RCS, core and object files\n");

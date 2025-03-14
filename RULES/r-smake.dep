@@ -1,6 +1,6 @@
-#ident "@(#)r-smake.dep	2.2 18/08/16 "
+#ident "@(#)r-smake.dep	2.4 21/04/28 "
 ###########################################################################
-# Written 1996 by J. Schilling
+# Written 1996-2019 by J. Schilling
 ###########################################################################
 #
 # Dependency building rules for smake
@@ -84,12 +84,14 @@ $(ARCHDIR)/%.d: %.cxx
 $(PDEP_FILE): $(DEP_DEP)
 
 $(DEP_DEP):
-	@if [ ! -f $@ ]; then				\
+	$(NOECHO)if [ ! -f $@ ]; then				\
 		echo "	==> MAKING DIRECTORY \"$(ARCHDIR)\"";	\
 		$(_MKDIR) -p $(ARCHDIR);		\
 		echo "	==> MAKING DIRECTORY \"$(ARCHDIR)/man\""; \
 		$(_MKDIR) -p $(ARCHDIR)/man;		\
 		echo > $@;				\
+	else						\
+		: work around v7 shell bug;		\
 	fi
 
 #$(DEP_FILE):

@@ -1,5 +1,5 @@
-. \" @(#)suntar.1	1.14 19/01/05 Copyr 2004-2019 J. Schilling
-. \"  Manual Seite fuer suntar
+. \" @(#)suntar.1	1.16 20/09/04 Copyright 2004-2020 J. Schilling
+. \"  Manual page for suntar
 . \"
 .if t .ds a \v'-0.55m'\h'0.00n'\z.\h'0.40n'\z.\v'0.55m'\h'-0.40n'a
 .if t .ds o \v'-0.55m'\h'0.00n'\z.\h'0.45n'\z.\v'0.55m'\h'-0.45n'o
@@ -13,7 +13,7 @@
 .if n .ds o oe
 .if n .ds u ue
 .if n .ds s sz
-.TH STUNAR 1 "2019/01/05" "J\*org Schilling" "Schily\'s USER COMMANDS"
+.TH STUNAR 1 "2022/10/06" "J\*org Schilling" "Schily\'s USER COMMANDS"
 .SH NAME
 suntar \- create tape archives and add or extract files
 .SH SYNOPSIS
@@ -36,7 +36,7 @@ For a description of the Sun tar program check the Sun tar manual page.
 .B Star
 supports the Sun tar options.
 
-.SH "EXTENDED OPTIONS
+.SH "EXTENDED OPTIONS"
 .PP
 The extended options are options taken from
 .BR star .
@@ -120,7 +120,7 @@ call fsync() for each extracted file.
 do not print statistics
 .TP
 .B \-\-do\-statistics
-rint statistics
+print statistics
 .TP
 .B \-\-fifostats
 print fifo statistics
@@ -163,9 +163,9 @@ For a complete documentation of the
 based options check
 .BR star (1).
 
-.SH EXAMPLES
-.SH ENVIRONMENT
-.SH FILES
+.\" .SH EXAMPLES
+.\" .SH ENVIRONMENT
+.\" .SH FILES
 .SH "SEE ALSO"
 .BR spax (1), 
 .BR suntar (1), 
@@ -182,10 +182,10 @@ based options check
 .BR rsh (1),
 .BR ssh (1),
 .BR star (1),
-.BR star (4),
+.BR star (5),
 .BR rcmd (3),
 .BR fssnap (1m)
-.SH DIAGNOSTICS
+.\" .SH DIAGNOSTICS
 .SH NOTES
 .PP
 This
@@ -195,22 +195,41 @@ implementation is based on the
 implementation and does not implement all features of the original Sun tar
 program.
 .PP
-.B "Suntar \-x
+.B "suntar \-x"
 is equivalent to
-.B "star \-xU \-force\-remove \-remove\-first \-keep\-nonempty\-dirs
+.B "star \-xU \-force\-remove \-remove\-first \-keep\-nonempty\-dirs"
+
 .SH BUGS
-.SH AUTHOR
+.PP
+None currently known.
+.PP
+Mail bugs and suggestions to
+.B schilytools@mlists.in-berlin.de
+or open a ticket at
+.BR https://codeberg.org/schilytools/schilytools/issues .
+.PP
+The mailing list archive may be found at:
+.PP
 .nf
-J\*org Schilling
-Seestr. 110
-D\-13353 Berlin
-Germany
+.BR https://mlists.in-berlin.de/mailman/listinfo/schilytools-mlists.in-berlin.de .
 .fi
-.PP
-Mail bugs and suggestions to:
-.PP
-.B
-joerg.schilling@fokus.fraunhofer.de
-or
-.B
-joerg@schily.net
+
+.SH AUTHORS
+.nf
+J\*org Schilling and the schilytools project authors.
+.fi
+
+.SH "SOURCE DOWNLOAD"
+The source code for
+.B suntar
+is included in the
+.B schilytools
+project and may be retrieved from the
+.B schilytools
+project at Codeberg at
+.LP
+.BR https://codeberg.org/schilytools/schilytools .
+.LP
+The download directory is
+.LP
+.BR https://codeberg.org/schilytools/schilytools/releases .

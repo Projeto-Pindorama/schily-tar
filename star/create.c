@@ -1,11 +1,11 @@
-/* @(#)create.c	1.156 19/03/11 Copyright 1985, 1995, 2001-2019 J. Schilling */
+/* @(#)create.c	1.162 20/07/08 Copyright 1985, 1995, 2001-2020 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)create.c	1.156 19/03/11 Copyright 1985, 1995, 2001-2019 J. Schilling";
+	"@(#)create.c	1.162 20/07/08 Copyright 1985, 1995, 2001-2020 J. Schilling";
 #endif
 /*
- *	Copyright (c) 1985, 1995, 2001-2019 J. Schilling
+ *	Copyright (c) 1985, 1995, 2001-2020 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -113,7 +113,7 @@ extern	dev_t	tape_dev;
 extern	ino_t	tape_ino;
 #define	is_tape(info)		((info)->f_dev == tape_dev && (info)->f_ino == tape_ino)
 
-extern	int	bufsize;
+extern	long	bufsize;
 extern	char	*bigptr;
 
 extern	BOOL	havepat;
@@ -134,6 +134,8 @@ extern	BOOL	acctime;
 extern	BOOL	dirmode;
 extern	BOOL	paxfollow;
 extern	BOOL	doacl;
+extern	BOOL	doxattr;
+extern	BOOL	dolxattr;
 extern	BOOL	nodesc;
 extern	BOOL	nomount;
 extern	BOOL	interactive;
@@ -155,6 +157,10 @@ extern	BOOL	dumpmeta;
 extern	BOOL	lowmem;
 extern	BOOL	do_subst;
 
+#ifdef	USE_FIND
+extern	BOOL	dofind;
+#endif
+
 extern	int	intr;
 
 /*
@@ -168,12 +174,12 @@ LOCAL	mode_t	statmode = _BAD_MODE;
 
 EXPORT	void	checklinks	__PR((void));
 LOCAL	int	take_file	__PR((char *name, FINFO *info));
-EXPORT	int	_fileread	__PR((int *fp, void *buf, int len));
+EXPORT	ssize_t	_fileread	__PR((int *fp, void *buf, size_t len));
 EXPORT	void	create		__PR((char *name, BOOL Hflag, BOOL forceadd));
 LOCAL	void	createi		__PR((char *sname, char *name, int namlen,
 					FINFO *info, pathstore_t *pathp,
 					struct pdirs *last));
-EXPORT	void	createlist	__PR((void));
+EXPORT	void	createlist	__PR((struct WALK *state));
 LOCAL	BOOL	get_metainfo	__PR((char *line));
 EXPORT	BOOL	read_symlink	__PR((char *sname, char *name, FINFO *info, TCB *ptb));
 LOCAL	LINKS	*find_link	__PR((FINFO *info));
@@ -184,11 +190,11 @@ EXPORT	void	flushlinks	__PR((void));
 LOCAL	void	flush_link	__PR((LINKS *lp));
 EXPORT	BOOL	read_link	__PR((char *name, int namlen, FINFO *info,
 								TCB *ptb));
-LOCAL	int	nullread	__PR((void *vp, char *cp, int amt));
+LOCAL	ssize_t	nullread	__PR((void *vp, char *cp, size_t amt));
 EXPORT	void	put_file	__PR((int *fp, FINFO *info));
 EXPORT	void	cr_file		__PR((FINFO *info,
-					int (*)(void *, char *, int),
-					void *arg, int amt, char *text));
+					ssize_t (*)(void *, char *, size_t),
+					void *arg, long amt, char *text));
 LOCAL	void	put_dir		__PR((char *sname, char *dname, int namlen,
 					FINFO *info, TCB *ptb,
 					pathstore_t *pathp, struct pdirs *last));
@@ -198,6 +204,7 @@ LOCAL	BOOL	checkexclude	__PR((char *sname, char *name, int namlen, FINFO *info))
 
 #ifdef	USE_FIND
 EXPORT	int	walkfunc	__PR((char *nm, struct stat *fs, int type, struct WALK *state));
+LOCAL	void	findcreate	__PR((char *name, struct WALK *state));
 #endif
 
 EXPORT void
@@ -399,18 +406,22 @@ take_file(name, info)
 	if (doacl)
 		(void) get_acls(info);
 #endif  /* USE_ACL */
+#ifdef	USE_XATTR
+	if (dolxattr)
+		(void) get_xattr(info);
+#endif
 	return (TRUE);
 }
 
-int
+ssize_t
 _fileread(fp, buf, len)
 	register int	*fp;
 	void	*buf;
-	int	len;
+	size_t	len;
 {
-	register int	fd = *fp;
-	register int	ret;
-		int	errcnt = 0;
+	register int		fd = *fp;
+	register ssize_t	ret;
+		int		errcnt = 0;
 
 retry:
 	while ((ret = read(fd, buf, len)) < 0 && geterrno() == EINTR)
@@ -743,7 +754,8 @@ out:
 }
 
 EXPORT void
-createlist()
+createlist(state)
+	struct WALK	*state;
 {
 	register int	nlen;
 		char	*name;
@@ -775,6 +787,11 @@ createlist()
 		if (intr)
 			break;
 		curfs = NODEV;
+#ifdef	USE_FIND
+		if (dofind) {
+			findcreate(name, state);
+		} else
+#endif
 		create(name, FALSE, FALSE); /* XXX Liste doch wie Kommandozeile? */
 	}
 	free(name);
@@ -995,7 +1012,7 @@ acpio_link(info)
 		char	*name = info->f_name;
 		char	*lname = info->f_lname;
 		off_t	size = info->f_size;	/* real size of file	    */
-#ifdef	__what_people_would_expect__
+#ifdef	__wrong_but_what_people_would_expect__
 		off_t	rsize = info->f_rsize;	/* size as archived on tape */
 #endif
 
@@ -1042,7 +1059,7 @@ acpio_link(info)
 	info->f_name  = name;
 	info->f_lname = lname;
 	info->f_size  = size;
-#ifdef	__what_people_would_expect__
+#ifdef	__wrong_but_what_people_would_expect__
 	info->f_rsize = rsize;
 #else
 	info->f_rsize = size;	/* Achieve that the last link archives data */
@@ -1297,11 +1314,11 @@ read_link(name, namlen, info, ptb)
 }
 
 /* ARGSUSED */
-LOCAL int
+LOCAL ssize_t
 nullread(vp, cp, amt)
 	void	*vp;
 	char	*cp;
-	int	amt;
+	size_t	amt;
 {
 	return (amt);
 }
@@ -1312,10 +1329,10 @@ put_file(fp, info)
 	register FINFO	*info;
 {
 	if (nullout) {
-		cr_file(info, (int(*)__PR((void *, char *, int)))nullread,
+		cr_file(info, (ssize_t(*)__PR((void *, char *, size_t)))nullread,
 							fp, 0, "reading");
 	} else {
-		cr_file(info, (int(*)__PR((void *, char *, int)))_fileread,
+		cr_file(info, (ssize_t(*)__PR((void *, char *, size_t)))_fileread,
 							fp, 0, "reading");
 	}
 }
@@ -1323,12 +1340,12 @@ put_file(fp, info)
 EXPORT void
 cr_file(info, func, arg, amt, text)
 		FINFO	*info;
-		int	(*func) __PR((void *, char *, int));
+		ssize_t	(*func) __PR((void *, char *, size_t));
 	register void	*arg;
-		int	amt;
+		long	amt;
 		char	*text;
 {
-	register int	amount;
+	register long	amount;
 	register off_t	blocks;
 	register off_t	size;
 	register int	i = 0;
@@ -1454,10 +1471,10 @@ put_dir(sname, dname, namlen, info, ptb, pathp, last)
 #endif
 	pathstore_t	path;
 	register char	*name;
-		int	xlen;
+		size_t	xlen;
 		BOOL	putdir = FALSE;
 		BOOL	direrr = FALSE;
-		int	dlen;
+		size_t	dlen;
 		char	*dp = NULL;
 	struct pdirs	thisd;
 	struct pdirs	*pd = last;
@@ -1507,7 +1524,7 @@ put_dir(sname, dname, namlen, info, ptb, pathp, last)
 		 */
 		if (!lowmem) {
 			ino_t	*ino = NULL;
-			int	nents;
+			size_t	nents;
 
 			d = lopendir(sname);
 			if (d) {
@@ -1643,13 +1660,21 @@ put_dir(sname, dname, namlen, info, ptb, pathp, last)
 				snm = dir->d_name;
 				xlen = strlen(snm);
 			} else {
-				if (dlen <= 0)
+				if (dlen == 0)
 					break;
 
 				snm = &dp[1];
 				xlen = strlen(snm);
 				dp += xlen + 2;
-				dlen -= xlen + 2;
+				/*
+				 * Subtract total element size but make sure
+				 * that "dlen" never wraps "below" zero, as it
+				 * is unsigned.
+				 */
+				if ((xlen + 2) > dlen)
+					dlen = 0;
+				else
+					dlen -= xlen + 2;
 			}
 
 			if ((namlen+xlen+1) >= pathp->ps_size) {
@@ -1962,13 +1987,40 @@ walkfunc(nm, fs, type, state)
 	if (state->tree == NULL ||
 	    find_expr(nm, nm + state->base, fs, state, state->tree)) {
 		FINFO	finfo;
+		extern char	*listfile;
 
 		finfo.f_sname = nm + state->base;
 		finfo.f_name = nm;
 		stat_to_info(AT_FDCWD, fs, &finfo);
+		if (nomount && newfs(&finfo))
+			return (0);
+		if (listfile)		/* We did not do a chdir() */
+			state->base = 0;
 		createi(nm + state->base, nm, strlen(nm), &finfo,
 			(pathstore_t *)0, (struct pdirs *)0);
 	}
 	return (0);
+}
+
+LOCAL void
+findcreate(name, state)
+	register char	*name;
+	struct WALK	*state;
+{
+	struct stat	statbuf;
+	int		type = WALK_NONE;
+
+	if (!getstat(name, &statbuf)) {
+		if (!errhidden(E_STAT, name)) {
+			if (!errwarnonly(E_STAT, name))
+				xstats.s_staterrs++;
+			errmsg("Cannot stat '%s'.\n", name);
+			(void) errabort(E_STAT, name, TRUE);
+		}
+		return;
+	}
+
+	walksname(name, state);
+	(void) walkfunc(name, &statbuf, type, state);
 }
 #endif
