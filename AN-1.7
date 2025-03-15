@@ -1,0 +1,305 @@
+Star is the fastest tar archiver for UNIX
+
+Star has many improvements compared to other tar 
+implementations (including gnu tar). See below for a short description
+of the highlight of star.
+
+Star is located on:
+
+https://github.com/Projeto-Pindorama/star
+
+Since Summer 2017, star offers more than 35 years of maintained service
+
+Note that this project includes a repackaged, quasi-verbatim extraction
+of the files related to the star program from the schilytools project.
+If you desire to, you can get the entire "schily" project bundle from:
+
+	https://schilytools.pkgsrc.pub/pub/schilytools/
+	http://schilytools.pkgsrc.pub/pub/schilytools/
+
+that includes the complete set of tools written per the late great
+Jörg Schilling.
+
+Changes since star-1.6:
+
+		*** WARNING        ***
+		*** Need new smake ***
+
+	*** Due to the fact that schily-tools 2014-04-03 introduced to use new macro
+	*** expansions and a related bug fix in smake, you need a new smake
+	*** to compile this source. To ensure this, get a recent smake source and call
+	in the smake directory tree:
+
+	cd ./psmake
+	./MAKE-all
+	cd ..
+	psmake/smake
+	psmake/smake install
+
+
+WARNING: the last separate star release has been 1.5.3 and this release was
+published in 2014. Since then, frequent star updates have been available inside
+the "schilytools" tar ball.
+
+In case the "schily"-libraries are going to be installed as shared libraries,
+is highly recommended to install star from the "schilytools" bundle instead of
+using this star only archive. This is the only way to have the commonly used
+code always at a recent development state.
+
+	BUG WARNING: Please never report bugs to Linux distributions as they
+		usually do not forward these bug reports upstream and as the
+		Linux distributions typically do not let skilled people check
+		the bugs. We did not hear about a FIFO problem in star for a
+		long time and since the problem that (on Linux) occurred once
+		every 6000-10000 tries did not happen on Solaris after
+		10 million tries, it was not known otherwise.
+
+This changelog may not be complete; for a complete changelog, please check the
+changelog and anouncement files from the schilytools. The changelog for the
+support libraries and the build system has been selectively taken from the last
+schilytools release, 2024-03-21.
+
+NEW FEATURES:
+
+-	libschily: obey HAVE_LONGDOUBLE, HAVE_FACCESSAT, and
+	HAVE_GETDOMAINNAME in libschily-mapvers, fixing the build with
+	lld 17 on recent FreeBSD.
+	Submitted by: Dimitry Andric.
+
+-	star: remove some C99-only code accidentally introduced in the
+	previous release.
+
+-	libschily: no longer provide the symbols fgetline, getline.
+	libschily used to provide these symbols as alternative names for
+	js_getline and js_fgetline for compatibility with UNOS.  As
+	their POSIX-incompatible signature causes problems when linking
+	against musl statically, we now no longer provide these symbols
+	by default.  Users wishing to restore the old behaviour should
+	remove -DNO_GETLINE_COMPAT from CPPOPTS when compiling libschily.
+
+-	libschily: accordingly, the man pages getline(3) and fgetline(3)
+	have been renamed to js_getline(3) and js_fgetline(3).
+
+-	star: add support for configuring compression and decompression
+	helpers.  The command executed when a compression/decompression
+	program is selected with the compress-program=name option can
+	be configured using a new set of name_CMD=... options in
+	/etc/default/star.  Refer to the new COMPRESSION section in
+	star(1) for details.  This feature is currently not available on
+	DOS (DJGPP).
+	Submitted by Philipp Wellner.
+
+-	libfind/sfind: Fix incorrect error handling of -exec ... {} +
+	primaries.  Previously in some cases the primary returned an
+	error even though it should always return true and in other
+	cases it completely disregarded the exit code.  Now the primary
+	always returns true and sets the exit code of libfind and sfind
+	to a non-zero value in case one of the commands returned with a
+	non-zero exit code.
+	Reported by Tavian Barnes.  Submitted by Nico Sonack.
+
+-	libfind/sfind: Report failures to query the password/group
+	database for -nouser/-nogroup.  Previously failure to query
+	these databases was treated as if the user id/group id was not
+	found.  We now print a diagnostic message and return a non-zero
+	value if the getpwuid() or getgrgid() call failed.
+	Reported by Tavian Barnes.
+
+-	libfind/sfind: Report presence of directory loops.  Previously,
+	such directory loops were silently ignored.  Now, upon
+	encountering a directory loop, sfind prints a diagnostic message
+	to standard error.  The search is continued but sfind will
+	terminate with a nonzero exit status.  This change improves
+	compatibility with POSIX (cf. PASC interpretation request 1606).
+	All libfind consumers calling the treewalk() function (mkisofs,
+	sccs, and star) are affected.
+	Reported by Tavian Barnes.  Submitted by Nico Sonack.
+
+-	star: rename tests/compress archives to avoid issues on case
+	insensitive file systems.  These file systems do not like having
+	multiple files whose names only differ in letter case.  Rename
+	the archives to completely distinct file names to avoid this
+	issue.
+	Reported by tux <rosa.elefant@icloud.com>.
+
+-	libschily/getargs.3: document surprising behaviour that the
+	the argument to a foo= parameter may be in the following
+	argument.  Thus, shell scripts should write foo= "$bar" instead
+	of foo=$bar if $bar could possibly be empty.
+	Submitted by Nico Sonack.
+
+-	libschily/getargs.3: improve spelling and grammar.
+
+-	inc: Remove outdated MKLINKS script
+	The affected source files haven't been links in a long time.
+
+-	star: convert star_fat.c generation to MKLINKS
+
+-	star: fix wrong handling of pre-1970/post-2036 dates in gnutar
+	archives on platforms with sizeof(time_t) > sizeof(long).
+
+-	libfind:
+	The string "Jörg Schilling" is now separate and in a gettext() call.
+
+-	mt: Added support for gettext() based translations
+	The string "Jörg Schilling" is now separate and in a gettext() call.
+
+-	star:
+	The string "Jörg Schilling" is now separate and in a gettext() call.
+
+-	star_sym:
+	The string "Jörg Schilling" is now separate and in a gettext() call.
+
+-	tartest: Added support for gettext() based translations
+	The string "Jörg Schilling" is now separate and in a gettext() call.
+
+Supported platforms:
+
+Virtually any! Known to work:
+
+SunOS 4.x, Solaris (SunOS 5.x), Linux,
+HP-UX, DG/UX, IRIX, AIX, FreeBSD, NetBSD, OpenBSD,
+OSF-1, True-64, QNX, BeOS, Apollo Domain/OS, Next-STep, 
+OS/2, SCO-openserver, SCO-unixware, Caldera OpenUnix,
+Cygwin (Win32), Sony NewsOS,  BSDi (BSD/OS), QNX,
+Apple Rhapsody, MacOS X, AmigaOS, GNU Hurd
+
+Jörg/Joerg
+
+-------------------------------------------------------------
+Star is the fastest known implementation of a tar archiver.
+
+Star development started 1982, the first complete implementation has 
+been done in 1985. I never did my backups with other tools than star.
+
+Its main advantages over other tar implementations are:
+
+	fifo			- keeps the tape streaming.
+				  This gives you faster backups than
+				  you can achieve with ufsdump, if the
+				  size of the filesystem is > 1 GByte.
+
+	remote tape support	- a fast RMT implementation that has no
+				  probems to saturate a 100 Mb/s network.
+				  in the mid 1990s and today is evenmuch
+				  faster.
+
+	selectable cli		- star cli=xxx allows to select a command
+				  line interface from the list "star",
+				  "suntar", "gnutar", "pax", "cpio".
+
+	accurate sparse files	- star is able to reproduce holes in sparse
+				  files accurately if the OS includes 
+				  the needed support functions. This is
+				  currently true for Solaris-2.3 to
+				  Solaris-2.5.1
+
+	pattern matcher		- for a convenient user interface
+				  (see manual page for more details).
+				  To archive/extract a subset of files.
+
+	sophisticated diff	- user tailorable interface for comparing
+				  tar archives against file trees
+				  This is one of the most interesting parts
+				  of the star implementation.
+
+	no namelen limitation	- Before July 2018, star did archive and extract
+				  Pathnames up to 1024 Bytes. Since July 2018,
+				  star deals  with long names of arbitrary
+				  length. The same limitation applies to
+				  linknames.
+
+	deals with all 3 times	- stores/restores all 3 times of a file
+				  (even creation time)
+				  With POSIX.1-2001 the times are in nanosecond
+				  granularity.
+				  Star may reset access time after doing
+				  backup. On Solaris this can be done without
+				  changing the ctime.
+
+	does not clobber files	- more recent copies on disk will not be 
+				  clobbered from tape
+				  This may be the main advantage over other
+				  tar implementations. This allows
+				  automatically repairing of corruptions
+				  after a crash & fsck (Check for differences
+				  after doing this with the diff option).
+
+	automatic byte swap	- star automatically detects swapped archives
+				  and transparently reads them the right way
+
+	automatic format detect	- star automatically detects several common
+				  archive formats and adopts to them.
+				  Supported archive types are:
+				  Old tar, gnu tar, ansi tar, star,
+				  POSIX.1-2001 PAX, Sun's Solaris tar.
+
+
+	automatic compression detect - star automatically detects whether the
+				  archive is compressed. If it has been
+				  compressed with a compression program that
+				  is compatible to decompression with "gzip".
+				  "bzip2", "lzop", "p7zip", "xz", "zstd",
+				  ...,, star automatically activates
+				  decompression for 14 different compression
+				  types.
+
+	fully ansi compatible	- Star is fully ANSI/Posix 1003.1 compatible.
+				  See README.otherbugs for a complete
+				  description of bugs found in other tar
+				  implementations. Star is the first tar
+				  implementation that supports POSIX.1-2001.
+
+	support for ACLs and file flags - star supports Access Control Lists
+				  with the withdrawn POSIX method and the
+				  NFSv4 standard ACL method as well as
+				  extended file flags (as found on FreeBSD
+				  and Linux). Support to archive and restore
+				  other file properties may be easily added.
+				  NFSv4 ACLs and the deprecated POSIX draft
+				  ACLs are supported.
+
+	support for all inode metadata - star supports to put all inode
+				  metadata on the archive. This allows future
+				  versions of star to perform true
+				  incremental dumps.
+
+	sophisticated error control - allows to tell star which error types
+				  should be ignored for wich file name pattern.
+				  This allows to write backup scripts that give
+				  no error messages for all problems that are
+				  tolerable (e.g. growing log files).
+
+	ED like filename substitution - star supports automated pattern rule based
+				  file name substitution as documented for 'pax'.
+
+	A fast built in -copy mode - allows to make fast and accurate copies and
+				  directory tree comparisons.
+
+	Integrated find(1) code - allows many interesting new features that would
+				  be possible with a separate find call.
+
+Have a look at the manual page, it is included in the distribution.
+
+Author:
+
+Joerg Schilling
+Seestr. 110
+D-13353 Berlin
+Germany
+
+Email: 	joerg@schily.net
+
+CONTRIBUTORS FOR THIS VERSION:
+
+Robert CLAUSECKER <fuz@fuz.su>
+Matthew GREEN <mrg@NetBSD.org>
+Dennis CLARKE <dclarke@blastwave.org>
+
+The schilytools maintainer
+Robert Clausecker <fuz@fuz.su>
+Please mail bugs and suggestions to me.
+
+Repackage made by Pindorama.
+If any bugs are found in this version, it
+shall be reported to us first.
