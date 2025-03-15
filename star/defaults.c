@@ -1,11 +1,14 @@
-/* @(#)defaults.c	1.17 18/07/10 Copyright 1998-2018 J. Schilling */
+/* @(#)defaults.c	1.19 19/10/13 Copyright 1998-2019 J. Schilling */
 #include <schily/mconfig.h>
+#include <stdlib.h>
+#include <string.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)defaults.c	1.17 18/07/10 Copyright 1998-2018 J. Schilling";
+	"@(#)defaults.c	1.19 19/10/13 Copyright 1998-2019 J. Schilling";
 #endif
 /*
- *	Copyright (c) 1998-2018 J. Schilling
+ *	Copyright (c) 1998-2019 J. Schilling
+ *	Copyright (c) 2022-2023 the schilytools team
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -47,8 +50,14 @@ extern	BOOL		nflag;
 EXPORT	char	*get_stardefaults __PR((char *name));
 LOCAL	int	open_stardefaults __PR((char *dfltname));
 EXPORT	void	star_defaults	__PR((long *fsp, BOOL *no_fsyncp,
+						BOOL *secure_linkp,
 						char *dfltname));
 EXPORT	BOOL	star_darchive	__PR((char *arname, char *dfltname));
+#if defined(HAVE_FORK) && !defined(__DJGPP__)
+LOCAL	char	*star_get_cmd_flags	__PR((char *prog_name, char *section));
+EXPORT	char	**get_args_for_helper	__PR((char *alg, char *section,
+						char *dfltflg, char *xtraflg));
+#endif
 
 EXPORT char *
 get_stardefaults(name)
@@ -91,17 +100,23 @@ open_stardefaults(dfltname)
 }
 
 EXPORT void
-star_defaults(fsp, no_fsyncp, dfltname)
+star_defaults(fsp, no_fsyncp, secure_linkp, dfltname)
 	long	*fsp;
 	BOOL	*no_fsyncp;
+	BOOL	*secure_linkp;
 	char	*dfltname;
 {
 	BOOL	is_open = FALSE;
 	BOOL	nofsync = FALSE;
+	BOOL	securelinks = FALSE;
+	BOOL	nohint = FALSE;
 	long	fs_cur	= 0L;
 	long	fs_max	= -1L;
 
 	dfltname = get_stardefaults(dfltname);
+
+	if (getenv("STAR_NOHINT"))
+		nohint = TRUE;
 
 	if (fsp != NULL)
 		fs_cur = *fsp;
@@ -164,7 +179,8 @@ star_defaults(fsp, no_fsyncp, dfltname)
 				p++;
 			if (*p == 'n' || *p == 'N') {
 				nofsync = TRUE;
-				if (!silent && !print_artype && xflag && !nflag)
+				if (!silent && !nohint &&
+				    !print_artype && xflag && !nflag)
 					errmsgno(EX_BAD,
 					"WARNING: fsync() disabled from '%s'.\n",
 					was_env ? "environment" :
@@ -176,6 +192,43 @@ star_defaults(fsp, no_fsyncp, dfltname)
 	}
 	if (no_fsyncp && nofsync >= 0)
 		*no_fsyncp = nofsync;
+
+	if (secure_linkp)
+		securelinks = *secure_linkp;
+	if (securelinks < 0) {
+		char	*p = NULL;
+		BOOL	was_env = FALSE;
+
+		p = getenv("STAR_SECURE_LINKS");
+		if (p == NULL) {
+			if (is_open) {
+				defltfirst();
+			} else if (open_stardefaults(dfltname) == 0) {
+				is_open = TRUE;
+			}
+			if (is_open)
+				p = defltread("STAR_SECURE_LINKS=");
+		} else {
+			was_env = TRUE;
+		}
+		if (p) {
+			while (*p == ' ' || *p == '\t')
+				p++;
+			if (*p == 'n' || *p == 'N') {
+				securelinks = TRUE;
+				if (!silent && !nohint &&
+				    !print_artype && xflag && !nflag)
+					errmsgno(EX_BAD,
+					"WARNING: -no-secure-links enabled from '%s'.\n",
+					was_env ? "environment" :
+					dfltname);
+			} else {
+				securelinks = FALSE;
+			}
+		}
+	}
+	if (secure_linkp && securelinks >= 0)
+		*secure_linkp = securelinks;
 
 	defltclose();
 }
@@ -270,3 +323,105 @@ star_darchive(arname, dfltname)
 #endif
 	return (TRUE);
 }
+
+#if defined(HAVE_FORK) && !defined(__DJGPP__)
+LOCAL char *
+star_get_cmd_flags(prog_name, section)
+	char	*prog_name, *section;
+{
+	register int	i;
+	char		*dfltname;
+	char		*cfg_name;
+	char		*cfg_value;
+	int		prog_name_len;
+
+	prog_name_len = strlen(prog_name);
+	if (prog_name_len == 0)
+		return (NULL);
+
+	dfltname = get_stardefaults(NULL);
+	if (dfltname == NULL)
+		return (NULL);
+	if (open_stardefaults(dfltname) != 0)
+		return (NULL);
+
+	if (defltsect(section) < 0)
+		return (NULL);
+
+	cfg_name = malloc(prog_name_len + sizeof "_CMD=");
+	if (cfg_name == NULL)
+		return (NULL);
+
+	for (i = 0; i < prog_name_len; i++)
+		cfg_name[i] = toupper(prog_name[i]);
+	strcpy(&cfg_name[prog_name_len], "_CMD=");
+
+
+	cfg_value = defltread(cfg_name);
+	free(cfg_name);
+
+	return (cfg_value);
+}
+
+/*
+ * Get the arguments for compression/decompression helpers.
+ * Return a pointer to a NULL-terminated argument vector or NULL
+ * on error.
+ *
+ * Invariant: the function is either called for compression or
+ * for decompression.
+ *
+ * Compression: section = "[compress]", dfltflg = NULL,
+ * 	xtraflag = getenv("STAR_COMPRESS_FLAG").
+ * Decompression: section = "[decompress]", dfltflg = "-d",
+ * 	xtraflag = NULL.
+ */
+EXPORT char **
+get_args_for_helper(alg, section, dfltflg, xtraflg)
+	char	*alg, *section, *dfltflg, *xtraflg;
+{
+	register int	i, n;
+	char		*flag, *flags, *tokflags, **argv;
+	static char	*dfltargv[3];
+
+	flags = star_get_cmd_flags(alg, section);
+	if (flags == NULL)
+		goto fallback;
+
+	/* find number of arguments */
+	n = 0;
+	tokflags = strdup(flags);
+	if (tokflags == NULL)
+		return (NULL);
+
+	flag = strtok(flags, " \t");
+	while (flag != NULL) {
+		n++;
+		flag = strtok(NULL, " \t");
+	}
+
+	/* flags empty: treat as if unset */
+	if (n == 0)
+		goto fallback;
+
+	argv = calloc(n + 2, sizeof *argv);
+	if (argv == NULL)
+		return (NULL);
+
+	argv[0] = strtok(tokflags, " \t");
+	for (i = 1; i < n; i++)
+		argv[i] = strtok(NULL, " \t");
+
+	if (xtraflg != NULL)
+		argv[i++] = xtraflg;
+
+	return (argv);
+
+fallback:
+	dfltargv[0] = alg;
+	dfltargv[1] = dfltflg != NULL ? dfltflg : xtraflg;
+	dfltargv[2] = NULL;
+
+	return (dfltargv);
+}
+#endif /* defined(HAVE_FORK) && !defined(__DJGPP__) */

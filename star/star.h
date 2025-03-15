@@ -1,6 +1,6 @@
-/* @(#)star.h	1.147 19/03/26 Copyright 1985, 1995-2019 J. Schilling */
+/* @(#)star.h	1.151 20/07/08 Copyright 1985, 1995-2020 J. Schilling */
 /*
- *	Copyright (c) 1985, 1995-2019 J. Schilling
+ *	Copyright (c) 1985, 1995-2020 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -606,8 +606,8 @@ typedef	struct	{
 	Ulong	f_gmaxlen;	/* Maximale Länge des Gruppennamens	  */
 	char	*f_dir;		/* Directory Inhalt			  */
 	ino_t	*f_dirinos;	/* Inode Liste fuer Directory Inhalt	  */
-	int	f_dirlen;	/* Extended strlen(f_dir)+1		  */
-	int	f_dirents;	/* # der Directory Eintraege		  */
+	size_t	f_dirlen;	/* Extended strlen(f_dir)+1		  */
+	size_t	f_dirents;	/* # der Directory Eintraege		  */
 	dev_t	f_dev;		/* Geraet auf dem sich d. Datei befindet  */
 	major_t	f_devmaj;	/* Major von f_dev			  */
 	minor_t	f_devmin;	/* Minor bei f_dev			  */
@@ -721,6 +721,8 @@ typedef	struct	{
 
 #define	XF_DEVMAJOR	0x1000	/* Major bei Geräten			  */
 #define	XF_DEVMINOR	0x2000	/* Major bei Geräten			  */
+#define	XF_FSDEVMAJOR	0x4000	/* Major Filesys			  */
+#define	XF_FSDEVMINOR	0x8000	/* Major Filesys			  */
 
 #define	XF_ACL_ACCESS	0x04000	/* POSIX Draft Access Control List	  */
 #define	XF_ACL_DEFAULT	0x08000	/* POSIX Draft Default ACL		  */
@@ -840,11 +842,17 @@ typedef struct {
 #undef	isdigit		/* Needed for HP-UX */
 #endif
 #define	isdigit(c)	((c) >= '0' && (c) <= '9')
+#ifdef	isoctal
+#undef	isoctal		/* Needed if aclutils.h is present */
+#endif
 #define	isoctal(c)	((c) >= '0' && (c) <= '7')
 #ifdef	isupper
 #undef	isupper		/* Needed for HP-UX */
 #endif
 #define	isupper(c)	((c) >= 'A' && (c) <= 'Z')
+#ifdef	toupper
+#undef	toupper		/* Needed if aclutils.h is present */
+#endif
 #define	toupper(c)	(isupper(c) ? (c) : (c) - ('a' - 'A'))
 /*
  * Needed for QNX
@@ -951,6 +959,9 @@ extern	struct	star_stats	xstats;
 #include <selinux/selinux.h>
 #endif
 
+extern	char	*bigbuf;
+extern	long	bigsize;
+extern	long	bufsize;
 
 #ifdef	__cplusplus
 }

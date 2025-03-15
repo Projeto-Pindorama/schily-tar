@@ -1,13 +1,13 @@
-/* @(#)walk.c	1.59 18/10/28 Copyright 2004-2018 J. Schilling */
+/* @(#)walk.c	1.65 19/11/28 Copyright 2004-2019 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)walk.c	1.59 18/10/28 Copyright 2004-2018 J. Schilling";
+	"@(#)walk.c	1.65 19/11/28 Copyright 2004-2019 J. Schilling";
 #endif
 /*
  *	Walk a directory tree
  *
- *	Copyright (c) 2004-2018 J. Schilling
+ *	Copyright (c) 2004-2019 J. Schilling
  *
  *	In order to make treewalk() thread safe, we need to make it to not use
  *	chdir(2)/fchdir(2) which is process global.
@@ -47,9 +47,8 @@ static	UConst char sccsid[] =
 #include <schily/stdio.h>
 #include <schily/unistd.h>
 #include <schily/stdlib.h>
-#ifdef	HAVE_FCHDIR
-#include <schily/fcntl.h>
-#else
+#include <schily/fcntl.h>	/* AT_FDCWD */
+#ifndef	HAVE_FCHDIR
 #include <schily/maxpath.h>
 #endif
 #include <schily/param.h>	/* NODEV */
@@ -111,12 +110,13 @@ extern int lstat __PR((const char *, struct stat *));
 #define	TW_MALLOC	0x01		/* Struct was allocated		*/
 struct twvars {
 	char		*Curdir;	/* The current path name	*/
-	int		Curdtail;	/* Where to append to Curdir	*/
-	int		Curdlen;	/* Current size of 'Curdir'	*/
-	int		Flags;		/* Flags related to this struct	*/
+	size_t		Curdtail;	/* Where to append to Curdir	*/
+	size_t		Curdlen;	/* Current size of 'Curdir'	*/
+	size_t		Snmlen;		/* Short nm len for walk()	*/
 	struct WALK	*Walk;		/* Backpointer to struct WALK	*/
 	struct stat	Sb;		/* stat(2) buffer for start dir	*/
 	struct pdirs	*pdirs;		/* Previous dirs for walkcwd()	*/
+	int		Flags;		/* Flags related to this struct	*/
 #ifdef	HAVE_FCHDIR
 	int		Home;		/* open fd to start CWD		*/
 #else
@@ -144,13 +144,14 @@ EXPORT	int	treewalk	__PR((char *nm, walkfun fn,
 LOCAL	int	walk		__PR((char *nm, statfun sf, walkfun fn,
 						struct WALK *state,
 						struct pdirs *last));
-LOCAL	int	incr_dspace	__PR((FILE *f, struct twvars *varp, int amt));
+LOCAL	size_t	incr_dspace	__PR((FILE *f, struct twvars *varp, size_t amt));
 EXPORT	void	walkinitstate	__PR((struct WALK *_state));
 EXPORT	void	*walkopen	__PR((struct WALK *_state));
 EXPORT	int	walkgethome	__PR((struct WALK *_state));
 EXPORT	int	walkhome	__PR((struct WALK *_state));
 EXPORT	int	walkclose	__PR((struct WALK *_state));
-LOCAL	int	xchdotdot	__PR((struct pdirs *last, int tail,
+EXPORT	size_t	walknlen	__PR((struct WALK *_state));
+LOCAL	int	xchdotdot	__PR((struct pdirs *last, size_t tail,
 						struct WALK *_state));
 LOCAL	int	xchdir		__PR((char *p));
 
@@ -177,7 +178,8 @@ treewalk(nm, fn, state)
 {
 	struct twvars	vars;
 	statfun		statf = wstat;
-	int		nlen;
+	size_t		nlen;
+	int		ret;
 
 #ifndef	USE_DIRFD
 	/*
@@ -226,8 +228,9 @@ treewalk(nm, fn, state)
 	 * If initial Curdir space is not sufficient, expand it.
 	 */
 	nlen = strlen(nm);
+	vars.Snmlen = nlen;
 	if ((vars.Curdlen - 2) < nlen)
-		if (incr_dspace(state->std[2], &vars, nlen + 2) < 0)
+		if (incr_dspace(state->std[2], &vars, nlen + 2) == (size_t)-1)
 			return (-1);
 
 	while (lstat(nm, &vars.Sb) < 0 && geterrno() == EINTR)
@@ -252,13 +255,13 @@ treewalk(nm, fn, state)
 			statf = wstat;
 	}
 
-	nlen = walk(nm, statf, fn, state, (struct pdirs *)0);
+	ret = walk(nm, statf, fn, state, (struct pdirs *)0);
 	walkhome(state);
 	walkclose(state);
 
 	free(vars.Curdir);
 	state->twprivate = NULL;
-	return (nlen);
+	return (ret);
 }
 
 LOCAL int
@@ -273,8 +276,8 @@ walk(nm, sf, fn, state, last)
 	struct stat	fs;
 	int		type;
 	int		ret;
-	int		otail;
-	char		*p;
+	size_t		otail;
+	size_t		obase;
 	struct twvars	*varp = state->twprivate;
 
 	varp->pdirs = last;
@@ -291,20 +294,46 @@ walk(nm, sf, fn, state, last)
 			varp->Curdir[0] = '.';
 			varp->Curdir[1] = '\0';
 		} else {
+			char	*p;
+
 			p = strcatl(&varp->Curdir[varp->Curdtail], nm,
 								(char *)0);
 			varp->Curdtail = p - varp->Curdir;
+			/*
+			 * Let state->base point to the last component for
+			 * command line arguments indicated by otail == 0.
+			 */
+			if (otail == 0) {
+				char		*e = p;
+				register char	*c = varp->Curdir;
+
+				while (--p > c) {	/* Skip trailing '/' */
+					if (*p != '/')
+						break;
+				}
+				if (*p != '/') {	/* Not only '/'s */
+					while (p >= c && *p != '/')
+						p--;
+					p++;		/* To first non '/' */
+				}
+				state->base = p - varp->Curdir;
+				varp->Snmlen = e-p;
+			}
 		}
 	} else {
+		char	*p;
+
 		p = strcatl(&varp->Curdir[varp->Curdtail], "/", nm, (char *)0);
 		varp->Curdtail = p - varp->Curdir;
 		state->base++;
 	}
+	obase = state->base;
 
 	if ((state->walkflags & WALK_NOSTAT) &&
 	    (
 #ifdef	HAVE_DIRENT_D_TYPE
-	    (state->flags & WALK_WF_NOTDIR) ||
+	    ((state->flags & (WALK_WF_NOTDIR|WALK_WF_ISLNK)) ==
+		WALK_WF_NOTDIR) ||
 #endif
 	    (last != NULL && !last->p_stat && last->p_nlink <= 0))) {
 		/*
@@ -420,6 +449,11 @@ type_known:
 			if (!IS_UFS(fs.st_fstype) &&
 			    !IS_ZFS(fs.st_fstype))
 				thisd.p_stat  = TRUE;
+#ifndef	HAVE_DIRENT_D_TYPE
+			else if (state->walkflags &
+					(WALK_ARGFOLLOW|WALK_ALLFOLLOW))
+				thisd.p_stat  = TRUE;
+#endif
 #else
 			thisd.p_stat  = TRUE;	/* Safe fallback */
 #endif
@@ -503,8 +537,9 @@ type_known:
 		} else {
 			char	*dp;
 			char	*odp;
-			int	nents;
-			int	Dspace;
+			size_t	nents;
+			size_t	Dspace;
+			size_t	olen = varp->Snmlen;
 
 			/*
 			 * Add space for '/' & '\0'
@@ -528,25 +563,31 @@ type_known:
 			odp = dp;
 			while (nents > 0 && ret == 0) {
 				register char	*name;
-				register int	nlen;
+				register size_t	nlen;
 
 				name = &dp[1];
 				nlen = strlen(name);
 
 				if (Dspace < nlen) {
-					int incr = incr_dspace(state->std[2],
+					size_t incr = incr_dspace(state->std[2],
 								varp, nlen + 2);
-					if (incr < 0) {
+					if (incr == (size_t)-1) {
 						ret = -1;
 						break;
 					}
 					Dspace += incr;
 				}
 #ifdef	HAVE_DIRENT_D_TYPE
-				if (dp[0] != FDT_DIR && dp[0] != FDT_UNKN)
+				if (dp[0] == FDT_LNK) {
+					state->flags |=
+					    WALK_WF_NOTDIR|WALK_WF_ISLNK;
+
+				} else if (dp[0] != FDT_DIR && dp[0] != FDT_UNKN) {
 					state->flags |= WALK_WF_NOTDIR;
+				}
 #endif
 				state->level++;
+				varp->Snmlen = nlen;
 				ret = walk(name, sf, fn, state, &thisd);
 				state->level--;
 
@@ -555,6 +596,7 @@ type_known:
 				nents--;
 				dp += nlen +2;
 			}
+			varp->Snmlen = olen;
 			free(odp);
 		skip:
 #ifdef	USE_DIRFD
@@ -588,6 +630,11 @@ type_known:
 				varp->Curdir[0] = '.';
 				varp->Curdir[1] = '\0';
 			}
+			/*
+			 * state->base has been modified while processing the
+			 * directory content.
+			 */
+			state->base = obase;
 			ret = (*fn)(varp->Curdir, &fs, type, state);
 		}
 	} else {
@@ -603,16 +650,17 @@ out:
 #endif
 	varp->Curdir[otail] = '\0';
 	varp->Curdtail = otail;
+	state->base = obase;
 	return (ret);
 }
 
-LOCAL int
+LOCAL size_t
 incr_dspace(f, varp, amt)
 	FILE		*f;
 	struct twvars	*varp;
-	int		amt;
+	size_t		amt;
 {
-	int	incr = DIR_INCR;
+	size_t	incr = DIR_INCR;
 	char	*new;
 
 	if (amt < 0)
@@ -622,7 +670,7 @@ incr_dspace(f, varp, amt)
 	new = __fjrealloc(f, varp->Curdir, varp->Curdlen + incr,
 						"path buffer", JM_RETURN);
 	if (new == NULL)
-		return (-1);
+		return ((size_t)-1);
 	varp->Curdir = new;
 	varp->Curdlen += incr;
 	return (incr);
@@ -635,7 +683,8 @@ EXPORT void
 walkinitstate(state)
 	struct WALK	*state;
 {
-	state->flags = state->base = state->level = state->walkflags = 0;
+	state->base = 0;
+	state->flags = state->level = state->walkflags = 0;
 	state->twprivate = NULL;
 	state->std[0] = stdin;
 	state->std[1] = stdout;
@@ -811,13 +860,46 @@ walkclose(state)
 }
 
 /*
+ * Return length of last pathnmame component.
+ */
+EXPORT size_t
+walknlen(state)
+	struct WALK	*state;
+{
+	struct twvars	*varp = state->twprivate;
+
+	return (varp->Snmlen);
+}
+
+/*
+ * Set up name base and length of last path name component.
+ * This is e.g. used with "star -c list=name -find ...".
+ */
+EXPORT void
+walksname(name, state)
+	char		*name;
+	struct WALK	*state;
+{
+	struct twvars	*varp = state->twprivate;
+	char		*p;
+
+	if ((p = strrchr(name, '/')) != NULL) {
+		state->base = ++p - name;
+	} else {
+		state->base = 0;
+		p = name;
+	}
+	varp->Snmlen = strlen(p);
+}
+
+/*
  * We only call xchdotdot() with state->level > 0,
  * so "last" is known to be != NULL.
  */
 LOCAL int
 xchdotdot(last, tail, state)
 	struct pdirs	*last;
-	int		tail;
+	size_t		tail;
 	struct WALK	*state;
 {
 	struct twvars	*varp = state->twprivate;

@@ -1,8 +1,8 @@
-/* @(#)wait.h	1.28 18/06/07 Copyright 1995-2018 J. Schilling */
+/* @(#)wait.h	1.31 19/12/09 Copyright 1995-2019 J. Schilling */
 /*
  *	Definitions to deal with various kinds of wait flavour
  *
- *	Copyright (c) 1995-2018 J. Schilling
+ *	Copyright (c) 1995-2019 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -206,8 +206,27 @@ typedef enum {
 #define	NO_CLD_EXITED
 #endif	/* CLD_EXITED */
 
+#ifdef	ultrix
+/*
+ * The W*() macros on Ultrix do not work and this is a result of
+ * an incorrect definition for union wait. The kernel uses the
+ * right bits in the status, so we #undef USE_UNION_WAIT and all
+ * W*() macros. This results in #defining our working versions.
+ */
+#define	WAIT_T		union wait
+#undef	USE_UNION_WAIT
+#undef	WTERMSIG
+#undef	WCOREDUMP
+#undef	WEXITSTATUS
+#undef	WSTOPSIG
+#undef	WIFCONTINUED
+#undef	WIFSTOPPED
+#undef	WIFSIGNALED
+#undef	WIFEXITED
+#endif	/* ultrix */
+
 #if defined(HAVE_UNION_WAIT) && defined(USE_UNION_WAIT)
-#	define WAIT_T union wait
+#	define	WAIT_T	union wait
 #	define	_W_U(w)	((union wait *)&(w))
 #	ifndef WTERMSIG
 #		define WTERMSIG(status)		(_W_U(status)->w_termsig)
@@ -239,7 +258,9 @@ typedef enum {
 						_W_U(status)->w_termsig == 0)
 #	endif
 #else
-#	define WAIT_T int
+#	ifndef	WAIT_T
+#	define	WAIT_T	int
+#	endif
 #	define	_W_I(w)	(*(int *)&(w))
 #	ifndef WTERMSIG
 #		define WTERMSIG(status)		(_W_I(status) & 0x7F)

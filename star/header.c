@@ -1,14 +1,15 @@
-/* @(#)header.c	1.198 19/03/26 Copyright 1985, 1994-2019 J. Schilling */
+/* @(#)header.c	1.206 20/07/08 Copyright 1985, 1994-2020 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)header.c	1.198 19/03/26 Copyright 1985, 1994-2019 J. Schilling";
+	"@(#)header.c	1.206 20/07/08 Copyright 1985, 1994-2020 J. Schilling";
 #endif
 /*
  *	Handling routines to read/write, parse/create
  *	archive headers
  *
- *	Copyright (c) 1985, 1994-2019 J. Schilling
+ *	Copyright (c) 1985, 1994-2020 J. Schilling
+ *	Copyright (c) 2022 the schilytools team
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -137,7 +138,7 @@ extern	BOOL	linkdata;
 extern	Ullong	tsize;
 
 extern	char	*bigbuf;
-extern	int	bigsize;
+extern	long	bigsize;
 
 LOCAL	Ulong	checksum	__PR((TCB *ptb));
 LOCAL	Ulong	bar_checksum	__PR((TCB *ptb));
@@ -341,8 +342,8 @@ isstmagic(s)
 /*
  * Check for XSTAR / XUSTAR format.
  *
- * Since we ise this function after we checked for the "tar" signature, it
- * is unly used as a XUSTAR check.
+ * Since we use this function after we checked for the "tar" signature, it
+ * is only used as a XUSTAR check.
  *
  * This is star's upcoming new standard format. This format understands star's
  * old extended POSIX format and in future will write POSIX.1-2001 extensions
@@ -977,6 +978,10 @@ get_tcb(ptb)
 	Ulong	check;
 	Ulong	ocheck;
 	BOOL	eof = FALSE;
+extern	long	iskip;
+extern	Llong	mtskip;
+extern	char	*bigptr;
+extern	m_stats	*stats;
 
 	/*
 	 * bei der Option -i wird ein genulltes File
@@ -1008,6 +1013,17 @@ get_tcb(ptb)
 #endif
 				xstats.s_hardeof++;
 				return (EOF);
+			}
+			if (mtskip) {
+				int	nbl = stats->blocksize / TBLOCK;
+
+				iskip = mtskip % nbl;
+				iskip *= TBLOCK;
+			}
+			if (iskip) {
+				if (stats->blocksize >= (iskip+TBLOCK)) {
+					movetcb((TCB *)(bigptr+iskip), (TCB *)ptb);
+				}
 			}
 			hdrtype = get_hdrtype(ptb, FALSE);
 			hdrtype = get_xhtype(ptb, hdrtype);
@@ -1129,6 +1145,8 @@ get_tcb(ptb)
 			 */
 			buf_resume();
 			buf_rwake(props.pr_hdrsize); /* eat up archive header */
+			if (iskip)
+				buf_rwake(iskip);
 		} else {
 			if (readblock((char *)ptb, props.pr_hdrsize) == EOF) {
 				errmsgno(EX_BAD,
@@ -1437,7 +1455,7 @@ info_to_tcb(info, ptb)
 						"Uid %lld for '%s' out of range.\n",
 						(Ullong)info->f_uid, info->f_name);
 					(void) errabort(E_ID, info->f_name, TRUE);
-				} 
+				}
 			}
 		} else {
 			litos(ptb->dbuf.t_uid, info->f_uid, 7);
@@ -1467,7 +1485,7 @@ info_to_tcb(info, ptb)
 						"Gid %lld for '%s' out of range.\n",
 						(Ullong)info->f_gid, info->f_name);
 					(void) errabort(E_ID, info->f_name, TRUE);
-				} 
+				}
 			}
 		} else {
 			litos(ptb->dbuf.t_gid, info->f_gid, 7);
@@ -1507,7 +1525,7 @@ info_to_tcb(info, ptb)
 						"Uid %lld for '%s' out of range.\n",
 						(Ullong)info->f_uid, info->f_name);
 					(void) errabort(E_ID, info->f_name, TRUE);
-				} 
+				}
 			}
 		} else {
 			litos(ptb->dbuf.t_uid, info->f_uid, 6);
@@ -1537,7 +1555,7 @@ info_to_tcb(info, ptb)
 						"Gid %lld for '%s' out of range.\n",
 						(Ullong)info->f_gid, info->f_name);
 					(void) errabort(E_ID, info->f_name, TRUE);
-				} 
+				}
 			}
 		} else {
 			litos(ptb->dbuf.t_gid, info->f_gid, 6);
@@ -1578,8 +1596,8 @@ info_to_tcb(info, ptb)
 					"Time %lld for '%s' out of range.\n",
 					(Ullong)info->f_mtime, info->f_name);
 				(void) errabort(E_TIME, info->f_name, TRUE);
-			} 
-		}	
+			}
+		}
 	} else {
 		if (props.pr_flags & PR_XHDR) {
 			if (info->f_mnsec != 0)
@@ -2141,14 +2159,11 @@ static	BOOL	modewarn = FALSE;
 	}
 
 	if ((info->f_xflags & XF_MTIME) == 0) {
-		if (ptb->dbuf.t_mtime[0] & 0x80)
-			stob(ptb->dbuf.t_mtime, &ul, 11);
-		else
-			stoli(ptb->dbuf.t_mtime, &ul, 11);
-		info->f_mtime = (time_t)ul;
+		stolli(ptb->dbuf.t_mtime, &ull);
+		info->f_mtime = (time_t)ull;
 		info->f_mnsec = 0L;
-		if (info->f_mtime != ul) {
-			print_hrange("time", (Ullong)ul);
+		if (info->f_mtime != ull) {
+			print_hrange("time", ull);
 			info->f_mtime = 0;
 		}
 	}
@@ -2346,19 +2361,13 @@ star_to_info(ptb, info)
 	}
 
 	if ((info->f_xflags & XF_ATIME) == 0) {
-		if (ptb->dbuf.t_atime[0] & 0x80)
-			stob(ptb->dbuf.t_atime, &id, 11);
-		else
-			stoli(ptb->dbuf.t_atime, &id, 11);
-		info->f_atime = (time_t)id;
+		stolli(ptb->dbuf.t_atime, &ull);
+		info->f_atime = (time_t)ull;
 		info->f_ansec = 0L;
 	}
 	if ((info->f_xflags & XF_CTIME) == 0) {
-		if (ptb->dbuf.t_ctime[0] & 0x80)
-			stob(ptb->dbuf.t_ctime, &id, 11);
-		else
-			stoli(ptb->dbuf.t_ctime, &id, 11);
-		info->f_ctime = (time_t)id;
+		stolli(ptb->dbuf.t_ctime, &ull);
+		info->f_ctime = (time_t)ull;
 		info->f_cnsec = 0L;
 	}
 
@@ -2485,7 +2494,7 @@ ustar_to_info(ptb, info)
 			/*
 			 * The 'tar' that comes with HP-UX writes illegal tar
 			 * archives. It includes 8 characters in the minor
-			 * field and allows to archive 24 bits for the minor
+			 * field and allows one to archive 24 bits for the minor
 			 * device which are used by HP-UX. As we like to be
 			 * able to read these archives, we need to convert
 			 * the number carefully by temporarily writing a NULL
@@ -2535,19 +2544,13 @@ xstar_to_info(ptb, info)
 	ustar_to_info(ptb, info);
 
 	if ((info->f_xflags & XF_ATIME) == 0) {
-		if (ptb->xstar_dbuf.t_atime[0] & 0x80)
-			stob(ptb->xstar_dbuf.t_atime, &ul, 11);
-		else
-			stoli(ptb->xstar_dbuf.t_atime, &ul, 11);
-		info->f_atime = (time_t)ul;
+		stolli(ptb->xstar_dbuf.t_atime, &ull);
+		info->f_atime = (time_t)ull;
 		info->f_ansec = 0L;
 	}
 	if ((info->f_xflags & XF_CTIME) == 0) {
-		if (ptb->xstar_dbuf.t_ctime[0] & 0x80)
-			stob(ptb->xstar_dbuf.t_ctime, &ul, 11);
-		else
-			stoli(ptb->xstar_dbuf.t_ctime, &ul, 11);
-		info->f_ctime = (time_t)ul;
+		stolli(ptb->xstar_dbuf.t_ctime, &ull);
+		info->f_ctime = (time_t)ull;
 		info->f_cnsec = 0L;
 	}
 
@@ -2579,25 +2582,23 @@ gnutar_to_info(ptb, info)
 	ustar_to_info(ptb, info);
 
 	if ((info->f_xflags & XF_ATIME) == 0) {
-		if (ptb->gnu_dbuf.t_atime[0] & 0x80)
-			stob(ptb->gnu_dbuf.t_atime, &ul, 11);
-		else
-			stoli(ptb->gnu_dbuf.t_atime, &ul, 11);
-		info->f_atime = (time_t)ul;
+		stolli(ptb->gnu_dbuf.t_atime, &ull);
+		info->f_atime = (time_t)ull;
 		info->f_ansec = 0L;
 		if (info->f_atime == 0 && ptb->gnu_dbuf.t_atime[0] == '\0')
 			info->f_atime = info->f_mtime;
+		else
+			info->f_xflags |= XF_ATIME;
 	}
 
 	if ((info->f_xflags & XF_CTIME) == 0) {
-		if (ptb->gnu_dbuf.t_ctime[0] & 0x80)
-			stob(ptb->gnu_dbuf.t_ctime, &ul, 11);
-		else
-			stoli(ptb->gnu_dbuf.t_ctime, &ul, 11);
-		info->f_ctime = (time_t)ul;
+		stolli(ptb->gnu_dbuf.t_ctime, &ull);
+		info->f_ctime = (time_t)ull;
 		info->f_cnsec = 0L;
 		if (info->f_ctime == 0 && ptb->gnu_dbuf.t_ctime[0] == '\0')
 			info->f_ctime = info->f_mtime;
+		else
+			info->f_xflags |= XF_CTIME;
 	}
 
 	if (is_sparse(info)) {
@@ -2719,7 +2720,7 @@ stoli(s, l, fieldw)
 	register int	t;
 	register char	*ep = s + fieldw;
 
-#ifdef	__nonono__
+#ifdef	__never__
 	/*
 	 * We do not like this to be used for the t_chksum field.
 	 */
@@ -3035,8 +3036,8 @@ dump_info(info)
 
 	error("f_dir:       %p\n", info->f_dir);
 	error("f_dirinos:   %p\n", info->f_dirinos);
-	error("f_dirlen:    %d\n", info->f_dirlen);
-	error("f_dirents:    %d\n", info->f_dirents);
+	error("f_dirlen:    %lld\n", (Llong)info->f_dirlen);
+	error("f_dirents:   %lld\n", (Llong)info->f_dirents);
 	error("f_dev:       0x%llX\n", (Ullong)info->f_dev);
 	error("f_ino:       %llu\n", (Ullong)info->f_ino);
 	error("f_nlink:     %llu\n", (Ullong)info->f_nlink);

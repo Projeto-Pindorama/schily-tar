@@ -1,4 +1,4 @@
-#ident "@(#)i386-freebsd-cc.rul	1.9 18/04/11 "
+#ident "@(#)i386-freebsd-cc.rul	1.11 21/05/27 "
 ###########################################################################
 # Written 1997-2018 by J. Schilling
 ###########################################################################
@@ -36,6 +36,6 @@ LIB_SOCKET=
 LIB_MATH=	-lm
 LIB_KVM=	
 
-LDOPTS=		$(LIBS_PATH) $(LDPATH)
+#LDOPTS=		$(LIBS_PATH) $(LDPATH)
 
-RANLIB=		@echo "	==> RANDOMIZING ARCHIVE \"$@\""; ranlib
+RANLIB=		$(NOECHO)echo "	==> RANDOMIZING ARCHIVE \"$@\""; ranlib

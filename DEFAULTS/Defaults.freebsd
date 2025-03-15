@@ -1,4 +1,4 @@
-#ident "@(#)Defaults.freebsd	1.6 13/11/04 "
+#ident "@(#)Defaults.freebsd	1.7 21/05/27 "
 ###########################################################################
 #
 # global definitions for FreeBSD Systems
@@ -8,7 +8,7 @@
 # Compiler stuff
 #
 ###########################################################################
-DEFCCOM=	cc
+DEFCCOM=	clang
 #DEFCCOM=	gcc
 
 ###########################################################################
@@ -18,7 +18,7 @@ DEFCCOM=	cc
 # If DEFLINKMODE is set to "dynamic", dynamic linking will be used
 #
 ###########################################################################
-DEFLINKMODE=	static
+DEFLINKMODE=	dynamic
 
 ###########################################################################
 #
@@ -32,6 +32,7 @@ DEFINCDIRS=	$(SRCROOT)/include
 DEFOSINCDIRS=	/usr/local/include
 LDPATH=		-L/opt/schily/lib -L/usr/local/lib
 #RUNPATH=	-R$(INS_BASE)/lib -R/opt/schily/lib -R$(OLIBSDIR)	Will probably not work
+RUNPATH=	-R$(INS_BASE)/lib
 
 ###########################################################################
 #
@@ -40,7 +41,7 @@ LDPATH=		-L/opt/schily/lib -L/usr/local/lib
 ###########################################################################
 INS_BASE=	/opt/schily
 INS_KBASE=	/
-INS_RBASE=	/
+INS_RBASE=	/opt/schily
 #
 DEFUMASK=	002
 #

@@ -1,6 +1,6 @@
-#ident @(#)rules.cnf	1.18 18/08/16 
+#ident @(#)rules.cnf	1.25 21/07/14 
 ###########################################################################
-# Written 1998-2013 by J. Schilling
+# Written 1998-2021 by J. Schilling
 ###########################################################################
 #
 # Make Rules for global dynamic configuration
@@ -28,14 +28,14 @@ $(SRCROOT)/autoconf/configure: $(SRCROOT)/autoconf/autoconf.m4 \
 				$(SRCROOT)/autoconf/aclocal.m4 \
 				$(SRCROOT)/autoconf/rules.cnf.in \
 				$(SRCROOT)/autoconf/xconfig.h.in
-	@echo "	==> AUTOCONFIGURING GLOBAL \"$@\""; \
+	$(NOECHO)echo "	==> AUTOCONFIGURING GLOBAL \"$@\""; \
 	cd $(SRCROOT)/autoconf && sh ./autoconf
 
 config: $(OINCSDIR)/rules.cnf
 
 $(OINCSDIR)/Inull:
 	$(MKDIR) -p $(OINCSDIR)
-	@echo > $@
+	$(NOECHO)echo > $@
 
 $(OINCSDIR):
 	$(MKDIR) -p $@
@@ -44,7 +44,8 @@ $(OINCSDIR):
 # Hack until the <mach>-<os>-*cc.rul files are updated
 #
 _HCC_COM=	$(OARCH:%-gcc=gcc)
-HCC_COM=	$(_HCC_COM:%-cc=cc)
+__HCC_COM=	$(_HCC_COM:%-clang=clang)
+HCC_COM=	$(__HCC_COM:%-cc=cc)
 
 _XCC_COM=	$(_UNIQ)$(CC_COM)
 __XCC_COM=	$(_XCC_COM:$(_UNIQ)=$(HCC_COM))
@@ -52,20 +53,34 @@ XCC_COM=	$(__XCC_COM:$(_UNIQ)%=%)
 
 #CONFFLAGS +=	-cc=$(XCC_COM)
 
+###########################################################################
+# Since the linker on z/OS complains about missing dirs if -L<missing>
+# was specified, we create $(OLIBSDIR) here, in order to have it present
+# at startup already.
+###########################################################################
 $(OINCSDIR)/rules.cnf $(OINCSDIR)/xconfig.h: $(OINCSDIR)/Inull \
 					$(SRCROOT)/autoconf/configure \
 					$(SRCROOT)/autoconf/rules.cnf.in \
 					$(SRCROOT)/autoconf/xconfig.h.in
+	$(NOECHO)echo "	==> MAKING DIRECTORY \"$(OLIBSDIR)\""; $(_MKDIR) -p $(OLIBSDIR)
 	$(RUL_CONF)
 
 ###########################################################################
+# We used LDFLAGS="$(LDOPTS)" since 2007, but the z/OS compiler does not
+# like -L /dir with a not yet existing directrory. We then did pass LDFLAGS=""
+# but this results in wrong configure results on FreeBSD if -L/usr/local/lib
+# is needed. Now configure uses a different link command line on OS/390.
+###########################################################################
 OS_DEFS=	$(OSINCDIRS:%=-I%) $(OSDEFS) $(OSDEFSX)
-RUL_CONF=	@echo "	==> CONFIGURING RULES \"$@\""; \
+RUL_CONF=	$(NOECHO)echo "	==> CONFIGURING RULES \"$@\""; \
 		$(RM_F) $(OINCSDIR)/rules.cnf $(OINCSDIR)/xconfig.h; \
-		cd $(OINCSDIR); \
+		(cd $(OINCSDIR); \
 		CONFIG_NOFAIL=TRUE CC="$(XCC_COM)" CFLAGS="$(C_FLAGS) $(CFLAGS)" \
 		CXXFLAGS="$(C++FLAGS)" CPPFLAGS="$(OS_DEFS) $(CPPFLAGS)" \
-		LDFLAGS="$(LDOPTS)" sh ../../autoconf/configure $(CONFFLAGS)
+		LDFLAGS="$(LDOPTS:%$(OLIBSDIR)=%../../$(OLIBSDIRR))" \
+		CONFIG_SHELL=$(SHELL) \
+		$(SHELL) ../../autoconf/configure $(CONFFLAGS) ); \
+		([ -d  $(SRCROOT)/inc ] && cd $(SRCROOT)/inc && $(MAKE) || :)
 ###########################################################################
 include $(OINCSDIR)/Inull
 include $(OINCSDIR)/rules.cnf

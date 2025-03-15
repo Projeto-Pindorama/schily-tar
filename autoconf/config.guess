@@ -1,5 +1,5 @@
 #! /bin/sh
-# @(#)config.guess	1.20 18/10/03 Copyright 1999-2014 J. Schilling
+# @(#)config.guess	1.25 21/06/15 Copyright 1999-2021 J. Schilling
 #
 # Attempt to guess a canonical system name.
 #   Copyright (C) 1992, 93, 94, 95, 96, 97, 1998 Free Software Foundation, Inc.
@@ -55,6 +55,7 @@ trap 'rm -f dummy.c dummy.o dummy; exit 1' 1 2 15
 #
 # This command helps to debug the script via "sh -x"
 #
+#	uname -m	uname -s	uname -r	uname -v
 : "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}:${UNAME_VERSION}"
 
 case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}:${UNAME_VERSION}" in
@@ -154,6 +155,10 @@ EOF
 	exit 0;;
     arm32:NetBSD:*:*)
 	echo arm-unknown-netbsd`echo ${UNAME_RELEASE}|sed -e 's/[-_].*/\./'`
+	exit 0 ;;
+    *arm:NetBSD:*:*)
+	UNAME_PROCESSOR=`uname -p | tr '[A-Z]' '[a-z]'`
+        echo "${UNAME_PROCESSOR}-unknown-netbsd"`echo ${UNAME_RELEASE}|sed -e 's/[-_].*/\./'`
 	exit 0 ;;
     SR2?01:HI-UX/MPP:*:*)
 	echo hppa1.1-hitachi-hiuxmpp
@@ -379,6 +384,14 @@ EOF
     DPX/2?00:B.O.S.:*:*)
 	echo m68k-bull-sysv3
 	exit 0 ;;
+    ia64:HP-UX:B.11.23:*)
+	HPUX_REV=`echo ${UNAME_RELEASE}|sed -e 's/[^.]*.[0B]*//'`
+	echo ia64-hp-hpux${HPUX_REV}
+	exit 0 ;;
+    ia64:HP-UX:B.11.31:*)
+	HPUX_REV=`echo ${UNAME_RELEASE}|sed -e 's/[^.]*.[0B]*//'`
+	echo ia64-hp-hpux${HPUX_REV}
+	exit 0 ;;
     9000/[34]??:4.3bsd:1.*:*)
 	echo m68k-hp-bsd
 	exit 0 ;;
@@ -536,6 +549,9 @@ EOF
 	exit 0 ;;
     i?86:BSD/386:*:* | *:BSD/OS:*:*)
 	echo ${UNAME_MACHINE}-pc-bsdi${UNAME_RELEASE}
+	exit 0 ;;
+    arm64:FreeBSD:*:*)
+	echo aarch64-unknown-freebsd`echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'`
 	exit 0 ;;
     *:FreeBSD:*:*)
 	echo ${UNAME_MACHINE}-unknown-freebsd`echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'`
@@ -883,12 +899,18 @@ EOF
     "x86":"Darwin":*)
 	echo i386-apple-macosx${UNAME_RELEASE}
 	exit 0 ;;
+    "arm64":"Darwin":*)
+	echo arm64-apple-macosx${UNAME_RELEASE}
+	exit 0 ;;
     *:OS/2:*:*)
         echo "i386-pc-os2_emx"
 	exit 0;;
     *:OpenVMS:*:*)
 	UNAME_PROCESSOR=`uname -p | tr [A-Z] [a-z]`
 	echo "${UNAME_PROCESSOR}-hp-openvms"
+	exit 0;;
+    *:OS/390:*:*)
+	echo "${UNAME_MACHINE}-ibm-os_390"
 	exit 0;;
 esac
 

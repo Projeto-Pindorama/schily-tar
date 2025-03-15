@@ -1,8 +1,9 @@
-/* @(#)starsubs.h	1.135 19/03/11 Copyright 1996-2019 J. Schilling */
+/* @(#)starsubs.h	1.144 20/07/19 Copyright 1996-2020 J. Schilling */
 /*
  *	Prototypes for star subroutines
  *
- *	Copyright (c) 1996-2019 J. Schilling
+ *	Copyright (c) 1996-2020 J. Schilling
+ *	Copyright (c) 2022-2023 the schilytools team
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -66,33 +67,34 @@ extern	BOOL	openremote	__PR((void));
 extern	void	opentape	__PR((void));
 extern	void	closetape	__PR((void));
 extern	void	changetape	__PR((BOOL donext));
+extern	void	runnewvolscript	__PR((int volno, int nindex));
 extern	void	nextitape	__PR((void));
 extern	void	nextotape	__PR((void));
-extern	int	startvol	__PR((char *buf, int amount));
-extern	void	newvolhdr	__PR((char *buf, int amount, BOOL do_fifo));
+extern	long	startvol	__PR((char *buf, long amount));
+extern	void	newvolhdr	__PR((char *buf, long amount, BOOL do_fifo));
 extern	void	initbuf		__PR((int nblocks));
 extern	void	markeof		__PR((void));
 extern	void	marktcb		__PR((char *addr));
 extern	void	syncbuf		__PR((void));
-extern	int	peekblock	__PR((char *buf, int amount));
-extern	int	readblock	__PR((char *buf, int amount));
-extern	int	readtape	__PR((char *buf, int amount));
+extern	long	peekblock	__PR((char *buf, long amount));
+extern	long	readblock	__PR((char *buf, long amount));
+extern	ssize_t	readtape	__PR((char *buf, size_t amount));
 #ifdef _STAR_H
 extern	void	filltcb		__PR((TCB *ptb));
 extern	void	movetcb		__PR((TCB *from_ptb, TCB *to_ptb));
 #endif
-extern	void	*get_block	__PR((int amount));
-extern	void	put_block	__PR((int amount));
+extern	void	*get_block	__PR((long amount));
+extern	void	put_block	__PR((long amount));
 extern	char	*writeblock	__PR((char *buf));
-extern	int	writetape	__PR((char *buf, int amount));
+extern	ssize_t	writetape	__PR((char *buf, size_t amount));
 extern	void	writeempty	__PR((void));
 extern	void	weof		__PR((void));
-extern	void	buf_sync	__PR((int size));
+extern	void	buf_sync	__PR((long size));
 extern	void	buf_drain	__PR((void));
-extern	int	buf_wait	__PR((int amount));
-extern	void	buf_wake	__PR((int amount));
-extern	int	buf_rwait	__PR((int amount));
-extern	void	buf_rwake	__PR((int amount));
+extern	long	buf_wait	__PR((long amount));
+extern	void	buf_wake	__PR((long amount));
+extern	long	buf_rwait	__PR((long amount));
+extern	void	buf_rwake	__PR((long amount));
 extern	void	buf_resume	__PR((void));
 extern	void	backtape	__PR((void));
 extern	int	mtioctl		__PR((int cmd, int count));
@@ -118,9 +120,11 @@ extern	BOOL	update_newer	__PR((FINFO *info));
  * create.c
  */
 extern	void	checklinks	__PR((void));
-extern	int	_fileread	__PR((int *fp, void *buf, int len));
+extern	ssize_t	_fileread	__PR((int *fp, void *buf, size_t len));
 extern	void	create		__PR((char *name, BOOL Hflag, BOOL forceadd));
-extern	void	createlist	__PR((void));
+#if	defined(_SCHILY_WALK_H)
+extern	void	createlist	__PR((struct WALK *state));
+#endif
 #ifdef _STAR_H
 extern	BOOL	read_symlink	__PR((char *sname, char *name,
 					FINFO *info, TCB *ptb));
@@ -133,8 +137,8 @@ extern	BOOL	read_link	__PR((char *name, int namlen, FINFO *info,
 extern	void	put_file	__PR((int *fp, FINFO *info));
 #endif
 extern	void	cr_file		__PR((FINFO *info,
-					int (*)(void *, char *, int),
-					void *arg, int amt, char *text));
+					ssize_t (*)(void *, char *, size_t),
+					void *arg, long amt, char *text));
 #endif
 #if defined(_SCHILY_STAT_H) && defined(_SCHILY_WALK_H)
 extern	int	walkfunc	__PR((char *nm, struct stat *fs,
@@ -192,8 +196,8 @@ extern	BOOL	create_dirs	__PR((char *name));
 extern	BOOL	make_adir	__PR((FINFO *info));
 extern	BOOL	void_file	__PR((FINFO *info));
 extern	int	xt_file		__PR((FINFO *info,
-					int (*)(void *, char *, int),
-					void *arg, int amt, char *text));
+					ssize_t (*)(void *, char *, size_t),
+					void *arg, long amt, char *text));
 extern	void	skip_slash	__PR((FINFO *info));
 #endif
 
@@ -202,20 +206,20 @@ extern	void	skip_slash	__PR((FINFO *info));
  */
 #ifdef	FIFO
 extern	void	initfifo	__PR((void));
-extern	void	fifo_ibs_shrink	__PR((int newsize));
+extern	void	fifo_ibs_shrink	__PR((long newsize));
 extern	void	runfifo		__PR((int ac, char *const *av));
 extern	void	fifo_prmp	__PR((int sig));
 extern	void	fifo_stats	__PR((void));
-extern	int	fifo_amount	__PR((void));
-extern	int	fifo_iwait	__PR((int amount));
-extern	void	fifo_owake	__PR((int amount));
+extern	size_t	fifo_amount	__PR((void));
+extern	long	fifo_iwait	__PR((long amount));
+extern	void	fifo_owake	__PR((long amount));
 extern	void	fifo_oflush	__PR((void));
 extern	void	fifo_oclose	__PR((void));
-extern	int	fifo_owait	__PR((int amount));
-extern	void	fifo_iwake	__PR((int amt));
+extern	long	fifo_owait	__PR((long amount));
+extern	void	fifo_iwake	__PR((long amt));
 extern	void	fifo_reelwake	__PR((void));
 extern	void	fifo_resume	__PR((void));
-extern	void	fifo_sync	__PR((int size));
+extern	void	fifo_sync	__PR((long size));
 extern	int	fifo_errno	__PR((void));
 extern	void	fifo_onexit	__PR((int err, void *ignore));
 extern	void	fifo_exit	__PR((int err));
@@ -287,20 +291,20 @@ extern	void	cpio_resync	__PR((void));
 extern	void	xbinit		__PR((void));
 extern	void	xbbackup	__PR((void));
 extern	void	xbrestore	__PR((void));
-extern	int	xhsize		__PR((void));
+extern	size_t	xhsize		__PR((void));
 extern	void	info_to_xhdr	__PR((FINFO *info, TCB *ptb));
 extern	BOOL	xhparse		__PR((FINFO *info, char	*p, char *ep));
-extern	void	xh_rangeerr	__PR((char *keyword, char *arg, int len));
+extern	void	xh_rangeerr	__PR((char *keyword, char *arg, size_t len));
 extern	void	gen_xtime	__PR((char *keyword, time_t sec, Ulong nsec));
 extern	void	gen_unumber	__PR((char *keyword, Ullong arg));
 extern	void	gen_number	__PR((char *keyword, Llong arg));
-extern	void	gen_text	__PR((char *keyword, char *arg, int alen,
+extern	void	gen_text	__PR((char *keyword, char *arg, size_t alen,
 								Uint flags));
 
 extern	void	tcb_to_xhdr_reset __PR((void));
 extern	int	tcb_to_xhdr	__PR((TCB *ptb, FINFO *info));
 
-extern	BOOL	get_xtime	__PR((char *keyword, char *arg, int len,
+extern	BOOL	get_xtime	__PR((char *keyword, char *arg, size_t len,
 						time_t *secp, long *nsecp));
 #ifdef	__needed_
 extern	BOOL	get_number	__PR((char *keyword, char *arg, Llong *llp));
@@ -394,6 +398,7 @@ extern	BOOL	getinfo		__PR((char *name, FINFO *info));
 extern	BOOL	getinfoat	__PR((int fd, char *name, FINFO *info));
 #endif
 #ifdef	_SCHILY_STAT_H
+extern	BOOL	getstat		__PR((char *name, struct stat *sp));
 extern	BOOL	stat_to_info	__PR((int fd, struct stat *sp, FINFO *info));
 #endif
 #ifdef	EOF
@@ -423,7 +428,7 @@ extern	int	lchmodat	__PR((char *name, mode_t mode, int flag));
 extern	int	lutimensat	__PR((char *name, struct timespec *ts,
 					int flag));
 #endif
-extern	int	lreadlink	__PR((char *name, char *buf, size_t bufsize));
+extern	int	lreadlink	__PR((char *name, char *buf, size_t _bufsize));
 extern	int	lsymlink	__PR((char *name, char *name2));
 extern	int	llink		__PR((char *name, char *name2));
 extern	int	lrename		__PR((char *name, char *name2));
@@ -440,7 +445,8 @@ extern	int	_lfileopen	__PR((char *name, char *mode));
 #ifdef	_SCHILY_DIRENT_H
 EXPORT	DIR	*lopendir	__PR((char *name));
 #endif
-#endif
+#endif	/* _STAR_H */
+EXPORT	int	hop_dirs	__PR((char *name, char **np));
 
 /*
  * acl_unix.c
@@ -456,10 +462,10 @@ extern	void	set_acls	__PR((FINFO *info));
  */
 extern	void	utf8_init	__PR((int type));
 extern	void	utf8_fini	__PR((void));
-extern	int	to_utf8		__PR((Uchar *to, int tolen,
-					Uchar *from, int len));
-extern	BOOL	from_utf8	__PR((Uchar *to, int tolen,
-					Uchar *from, int *len));
+extern	size_t	to_utf8		__PR((Uchar *to, size_t tolen,
+					Uchar *from, size_t len));
+extern	BOOL	from_utf8	__PR((Uchar *to, size_t tolen,
+					Uchar *from, size_t *len));
 
 /*
  * fflags.c
@@ -477,12 +483,18 @@ extern	int	texttoflags	__PR((FINFO *info, char *buf));
  */
 extern	char	*get_stardefaults __PR((char *name));
 extern	void	star_defaults	__PR((long *fsp, BOOL *no_fsyncp,
+						BOOL *secure_linkp,
 						char *dfltname));
 extern	BOOL	star_darchive	__PR((char *arname, char *dfltname));
+#if defined(HAVE_FORK) && !defined(__DJGPP__)
+extern	char	**get_args_for_helper	__PR((char *alg, char *section,
+						char *dfltflg, char *xtraflg));
+#endif
 
 /*
  * subst.c
  */
+extern	int	paxpsubst	__PR((char *cmd, BOOL *arg));
 extern	int	parsesubst	__PR((char *cmd, BOOL *arg));
 #ifdef _STAR_H
 extern	BOOL	subst		__PR((FINFO *info));

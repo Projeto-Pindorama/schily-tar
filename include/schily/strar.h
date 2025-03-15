@@ -1,11 +1,11 @@
-/* @(#)strar.h	1.5 18/05/17 Copyright 2001-2018 J. Schilling */
+/* @(#)strar.h	1.7 19/10/13 Copyright 2001-2019 J. Schilling */
 /*
  *	Defitions for the stream archive interfaces.
  *
  *	A stream archive is based on the method used for
  *	POSIX tar extended headers
  *
- *	Copyright (c) 2001-2018 J. Schilling
+ *	Copyright (c) 2001-2019 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -37,6 +37,10 @@
 #include <schily/utypes.h>
 #endif
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 typedef	struct	{
 	FILE	*f_fp;		/* FILE * f. Archiv			  */
 	const char *f_fpname;	/* Archive name				  */
@@ -55,6 +59,8 @@ typedef	struct	{
 	Ulong	f_gmaxlen;	/* Maximale Länge des Gruppennamens	  */
 
 	dev_t	f_dev;		/* Geraet auf dem sich d. Datei befindet  */
+	dev_t	f_devmaj;	/* major(st_dev)			  */
+	dev_t	f_devmin;	/* minor(st_dev)			  */
 	ino_t	f_ino;		/* Dateinummer				  */
 	nlink_t	f_nlink;	/* Anzahl der Links			  */
 
@@ -129,6 +135,8 @@ typedef	FINFO	strar;
 
 #define	XF_DEVMAJOR	0x1000	/* Major bei Geräten			  */
 #define	XF_DEVMINOR	0x2000	/* Major bei Geräten			  */
+#define	XF_FSDEVMAJOR	0x4000	/* Major Filesys			  */
+#define	XF_FSDEVMINOR	0x8000	/* Major Filesys			  */
 
 #define	XF_FFLAGS	0x10000	/* File flags				  */
 				/* Echte Dateigröße (f_size)		  */
@@ -147,7 +155,8 @@ typedef	FINFO	strar;
 #define	XF_ALL_FILEMETA	(XF_FILETYPE | XF_MODE | \
 			XF_ATIME | XF_MTIME | XF_CTIME | \
 			XF_UID | XF_GID | XF_UNAME | XF_GNAME | \
-			XF_DEV | XF_INO | XF_NLINK | XF_DEVMAJOR | XF_DEVMINOR)
+			XF_DEV | XF_FSDEVMAJOR | XF_FSDEVMINOR | \
+			XF_INO | XF_NLINK | XF_DEVMAJOR | XF_DEVMINOR)
 
 /*
  * All Extended header tags that are covered by POSIX.1-2001
@@ -184,5 +193,8 @@ extern	int	strar_skip	__PR((strar *s));
 extern	int	strar_setnowarn	__PR((int val));
 extern	void	strar_xbreset	__PR((void));
 
+#ifdef	__cplusplus
+}
+#endif
 
 #endif	/* _SCHILY_STRAR_H */

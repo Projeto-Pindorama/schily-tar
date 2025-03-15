@@ -1,6 +1,6 @@
-#ident "@(#)i386-openbsd-cc.rul	1.11 18/04/11 "
+#ident "@(#)i386-openbsd-cc.rul	1.13 21/04/28 "
 ###########################################################################
-# Written 1997-2018 by J. Schilling
+# Written 1997-2019 by J. Schilling
 ###########################################################################
 #
 # Platform dependent MACROS for OpenBSD
@@ -22,7 +22,7 @@
 ###########################################################################
 include $(SRCROOT)/$(RULESDIR)/rules.prg
 ###########################################################################
-include $(SRCROOT)/$(RULESDIR)/cc-gcc.rul
+include $(SRCROOT)/$(RULESDIR)/cc-g$(C_ARCH).rul
 
 OSDEFS +=
 
@@ -39,4 +39,4 @@ LIB_KVM=
 #LDOPTS=		$(LIBS_PATH) $(LDPATH) $(RUNPATH:-R%=-Wl,-R%)
 LDOPTS=		$(LIBS_PATH) $(LDPATH)
 
-RANLIB=		@echo "	==> RANDOMIZING ARCHIVE \"$@\""; ranlib
+RANLIB=		$(NOECHO)echo "	==> RANDOMIZING ARCHIVE \"$@\""; ranlib

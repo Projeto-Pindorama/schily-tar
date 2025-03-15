@@ -1,14 +1,15 @@
 /*#define	PLUS_DEBUG*/
-/* @(#)find.c	1.118 19/01/08 Copyright 2004-2019 J. Schilling */
+/* @(#)find.c	1.119 19/09/07 Copyright 2004-2019 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)find.c	1.118 19/01/08 Copyright 2004-2019 J. Schilling";
+	"@(#)find.c	1.119 19/09/07 Copyright 2004-2019 J. Schilling";
 #endif
 /*
  *	Another find implementation...
  *
  *	Copyright (c) 2004-2019 J. Schilling
+ *	Copyright (c) 2022 the schilytools team
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -50,6 +51,7 @@ static	UConst char sccsid[] =
 #define	VMS_VFORK_OK
 #include <schily/vfork.h>
 #include <schily/errno.h>
+#include <schily/libgen.h>	/* Past string.h, avoid Linux basename() bug */
 
 #include <schily/nlsdefs.h>
 
@@ -1532,6 +1534,13 @@ find_expr(f, ff, fs, state, t)
 		/* FALLTHROUGH */
 	case NAME:
 		p = ff;
+		if (p[walknlen(state)-1] == '/') {
+			/*
+			 * Remove trailing slashes
+			 */
+			strlcpy(lname, p, sizeof (lname));
+			p = basename(lname);
+		}
 	nmatch:
 #if	defined(HAVE_FNMATCH)
 		return (!fnmatch(t->this, p, fnflags));
@@ -1571,6 +1580,13 @@ find_expr(f, ff, fs, state, t)
 		goto pattern;
 	case PAT:
 		p = ff;
+		if (p[walknlen(state)-1] == '/') {
+			/*
+			 * Remove trailing slashes
+			 */
+			strlcpy(lname, p, sizeof (lname));
+			p = basename(lname);
+		}
 	pattern: {
 		Uchar	*pr;		/* patmatch() return */
 
@@ -1954,10 +1970,32 @@ find_expr(f, ff, fs, state, t)
 		return (TRUE);
 
 	case NOUSER:
-		return (getpwuid(fs->st_uid) == NULL);
+		seterrno(0);
+		if (getpwuid(fs->st_uid) != NULL)
+			return (FALSE);
+
+		if (geterrno() != 0) {
+			ferrmsg(state->std[2],
+				_("Cannot query password database for user id %llu.\n"),
+				(Llong)fs->st_uid);
+			state->err = 1;
+		}
+
+		return (TRUE);
 
 	case NOGRP:
-		return (getgrgid(fs->st_gid) == NULL);
+		seterrno(0);
+		if (getgrgid(fs->st_gid) != NULL)
+			return (FALSE);
+
+		if (geterrno() != 0) {
+			ferrmsg(state->std[2],
+				_("Cannot query group database for group id %llu.\n"),
+				(Llong)fs->st_gid);
+			state->err = 1;
+		}
+
+		return (TRUE);
 
 	case PRUNE:
 		state->flags |= WALK_WF_PRUNE;
@@ -2641,7 +2679,6 @@ plusexec(f, t, state)
 	size_t	slen = strlen(f) + 1;
 	char	*nargp = (char *)&pp->nextargp[2];
 	char	*cp;
-	int	ret = TRUE;
 
 	size = pp->laststr - (char *)&pp->nextargp[2];	/* Remaining strlen */
 
@@ -2651,7 +2688,8 @@ plusexec(f, t, state)
 	if (pp->laststr < nargp ||			/* Already full	    */
 	    slen > size) {				/* str does not fit */
 		pp->nextargp[0] = NULL;
-		ret = doexec(NULL, t, pp->ac, pp->av, state);
+		if (!doexec(NULL, t, pp->ac, pp->av, state))
+			state->err = 1;
 		pp->laststr = pp->endp;
 		pp->ac = t->val.i;
 		pp->nextargp = &pp->av[t->val.i];
@@ -2677,7 +2715,7 @@ plusexec(f, t, state)
 	}
 	error("EXECPLUS '%s'\n", f);
 #endif
-	return (ret);
+	return (TRUE);
 }
 #endif	/* HAVE_FORK */
 
@@ -2699,8 +2737,10 @@ find_plusflush(p, state)
 		if (plusp->laststr != plusp->endp) {
 			plusp->nextargp[0] = NULL;
 #ifdef	HAVE_FORK
-			if (!doexec(NULL, NULL, plusp->ac, plusp->av, state))
+			if (!doexec(NULL, NULL, plusp->ac, plusp->av, state)) {
+				state->err = 1;
 				ret = FALSE;
+			}
 #endif
 		}
 		plusp = plusp->next;
@@ -2856,6 +2896,7 @@ main(ac, av)
 	char	**av;
 {
 	int	cac  = ac;
+	int	ret  = 0;
 	char	**cav = av;
 	char	**firstpath;
 	char	**firstprim;

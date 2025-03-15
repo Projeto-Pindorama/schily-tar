@@ -1,14 +1,14 @@
-/* @(#)cpiohdr.c	1.34 18/07/15 Copyright 1994-2018 J. Schilling */
+/* @(#)cpiohdr.c	1.36 20/07/19 Copyright 1994-2020 J. Schilling */
 #include <schily/mconfig.h>
 #ifndef lint
 static	UConst char sccsid[] =
-	"@(#)cpiohdr.c	1.34 18/07/15 Copyright 1994-2018 J. Schilling";
+	"@(#)cpiohdr.c	1.36 20/07/19 Copyright 1994-2020 J. Schilling";
 #endif
 /*
  *	Handling routines to read/write, parse/create
  *	cpio archive headers
  *
- *	Copyright (c) 1994-2018 J. Schilling
+ *	Copyright (c) 1994-2020 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -73,7 +73,7 @@ put_cpioh(ptb, info)
 	if ((info->f_flags & F_TCB_BUF) != 0) {	/* TCB is on buffer */
 		put_block(props.pr_hdrsize);
 	} else {
-		int	i;
+		size_t	i;
 	extern char	*bigptr;
 
 		/*
@@ -312,12 +312,17 @@ cpiotcb_to_info(ptb, info)
 	switch (H_TYPE(hdrtype)) {
 
 	case H_CPIO_BIN:
+#ifdef	__wrong__
 		l1 = (((char *)ptb)[20] & 0xFF) * 256 + (((char *)ptb)[21] & 0xFF);
 		l2 = (((char *)ptb)[21] & 0xFF) * 256 + (((char *)ptb)[20] & 0xFF);
 		if (l1 <= 257 || l2 <= 257) {
 			if (l2 <= 257)
 				swapped = TRUE;
 		}
+#else
+		if ((((char *)ptb)[0] & 0xFF) == 0307)
+			swapped = TRUE;
+#endif
 		if (swapped) {
 			movebytes(ptb, binhdr, CPIOBIN_HDRSZ);
 			ptb = (TCB *)binhdr;
@@ -457,6 +462,16 @@ cpiotcb_to_info(ptb, info)
 		comerrno(EX_BAD, "Can't handle this cpio archive type (yet).\n");
 	}
 
+	if (info->f_pname.ps_size < (info->f_namelen + 2)) {
+		if (grow_pspace(PS_STDERR,
+		    &info->f_pname, (info->f_namelen + 2)) < 0) {
+			errmsgno(EX_BAD,
+			    "Name length (%lu) too large, cannot grow.\n",
+			    info->f_namelen);
+			die(EX_BAD);	/* Need to change to permit -i resync */
+		}
+		info->f_name = info->f_pname.ps_path;
+	}
 	move.m_data = info->f_name;
 	move.m_flags = 0;
 	if (info->f_namelen <= 1) {
@@ -486,6 +501,16 @@ cpiotcb_to_info(ptb, info)
 
 	info->f_lname[0] = '\0';
 	if (is_symlink(info)) {
+		if (info->f_plname.ps_size < (info->f_lnamelen + 2)) {
+			if (grow_pspace(PS_STDERR,
+			    &info->f_plname, (info->f_lnamelen + 2)) < 0) {
+				errmsgno(EX_BAD,
+				    "Linkname length (%lu) too large, cannot grow.\n",
+				    info->f_lnamelen);
+				die(EX_BAD);	/* Need to change to permit -i resync */
+			}
+			info->f_lname = info->f_plname.ps_path;
+		}
 		move.m_data = info->f_lname;
 		move.m_flags = 0;
 		if (info->f_size <= 0) {

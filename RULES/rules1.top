@@ -1,6 +1,6 @@
-#ident "@(#)rules1.top	1.58 19/03/14 "
+#ident "@(#)rules1.top	1.63 21/07/14 "
 ###########################################################################
-# Written 1996-2018 by J. Schilling
+# Written 1996-2021 by J. Schilling
 ###########################################################################
 #
 # Rules that should be included at top of every Makefile
@@ -8,7 +8,8 @@
 # version that may be included in special purpose versions.
 #
 ###########################################################################
-# Copyright (c) J. Schilling
+# Copyright (c) 1996-2021 J. Schilling
+# Copyright (c) 2022 the schilytools team
 ###########################################################################
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -39,7 +40,7 @@ all:
 
 ###########################################################################
 #
-# Build a macro $(SRCROOTSL) that allows to use file name
+# Build a macro $(SRCROOTSL) that allows one to use file name
 # $(SRCROOTSL)incs/Dcc.$(PARCH)$(-O_ARCH) instead of using
 # the file name $(SRCROOT)/incs/Dcc.$(PARCH)$(-O_ARCH) 
 #
@@ -51,7 +52,7 @@ all:
 # SunPRO make inconsistsently shortens rules that start with "./"
 # and thus will not find existing rules for a file to be included.
 # We use pattern matching macro expansions to consistently shorten the
-# name if it starts with "./".  This allows to use the same textual
+# name if it starts with "./".  This allows one to use the same textual
 # string for both the rule and the include statement.
 #
 # Note that Thus bug has been reported to Sun in 1998 but Sun seems not
@@ -67,7 +68,7 @@ SRCROOTSL= 	$(_SRCROOTSL:./%=%)
 #
 ###########################################################################
 .INCLUDE_FAILED:
-	@echo " ==> AUTOMAKING \"$^\""; sh $(SRCROOTSL)conf/makeinc $^
+	$(NOECHO)echo " ==> AUTOMAKING \"$^\""; sh $(SRCROOTSL)conf/makeinc $^
 
 ###########################################################################
 #
@@ -75,7 +76,7 @@ SRCROOTSL= 	$(_SRCROOTSL:./%=%)
 #
 ###########################################################################
 .INCLUDEFAILED:
-	@echo " ==> AUTOMAKING \"$^\""; sh $(SRCROOTSL)conf/makeinc $^
+	$(NOECHO)echo " ==> AUTOMAKING \"$^\""; sh $(SRCROOTSL)conf/makeinc $^
 
 ###########################################################################
 #
@@ -103,10 +104,19 @@ _XMAKEPROG=	$(__MAKEPROG:$(_UNIQ)%=%)
 # gmake defines a macro MAKE_COMMAND. If neither MAKE_NAME is defined by 
 # the make program, nor MAKEPROG is set, try this to recognize gmake.
 #
-_MAKE_COMMAND=	$(MAKE_COMMAND:%make=gmake)
+_GMAKE_COMMAND=	$(_UNIQ)$(MAKE_COMMAND)
+__GMAKE_COMMAND= $(_GMAKE_COMMAND:%make=gmake)
+___GMAKE_COMMAND= $(__GMAKE_COMMAND:$(_UNIQ)%=)
+
+# bmake defined a macro .MAKE. If neither MAKE_NAME is defined by
+# the make program, nor MAKEPROG is set, try this to recognize bmake.
+#
+_BMAKE_COMMAND=	$(_UNIQ)$(.MAKE)
+__BMAKE_COMMAND= $(_BMAKE_COMMAND:%make=bsdmake)
+___BMAKE_COMMAND= $(__BMAKE_COMMAND:$(_UNIQ)%=)
 
 __XMAKEPROG=	$(_UNIQ)$(_XMAKEPROG)
-___XMAKEPROG=	$(__XMAKEPROG:$(_UNIQ)=$(_MAKE_COMMAND))
+___XMAKEPROG=	$(__XMAKEPROG:$(_UNIQ)=$(___GMAKE_COMMAND)$(___BMAKE_COMMAND))
 XMAKEPROG=	$(___XMAKEPROG:$(_UNIQ)%=%)
 
 include		$(SRCROOT)/$(RULESDIR)/mk-$(XMAKEPROG).id
@@ -141,6 +151,7 @@ include		$(SRCROOT)/$(RULESDIR)/os-$(O_ARCH).def
 #
 ###########################################################################
 CWARNOPTS=	$(CWOPTS)
+C++WARNOPTS=	$(C++WOPTS)
 
 ###########################################################################
 #
@@ -193,7 +204,7 @@ MANBASE=	$(__MANBASE:$(_UNIQ)%=%)
 ###########################################################################
 _DIRNAME=	$(_UNIQ)$(DIRNAME)
 __DIRNAME=	$(_DIRNAME:$(_UNIQ)=...)
-CURDIR=		$(__DIRNAME:$(_UNIQ)%=%)
+CURWDIR=	$(__DIRNAME:$(_UNIQ)%=%)
 
 ###########################################################################
 #
@@ -274,8 +285,10 @@ $(SRCROOTSL)incs:
 	$(MKDIR_SH) -p $@
 
 $(SRCROOTSL)incs/Dnull: $(SRCROOTSL)incs
-	@if [ ! -f $@ ]; then	\
+	$(NOECHO)if [ ! -f $@ ]; then	\
 		echo > $@;	\
+	else			\
+		: work around v7 shell bug; \
 	fi
 
 include		$(SRCROOTSL)incs/Dnull
@@ -323,8 +336,11 @@ ARCHDIR=	OBJ/$(OARCH)$(SUBARCHDIR)$(SUBARCH)
 # See notes about $(SRCROOT)/ vs. $(SRCROOTSL) above.
 #
 ###########################################################################
+OLIBSDIRR=		    libs/$(OARCH)$(SUBARCHDIR)$(SUBARCH)$(SHLDIR)
 OLIBSDIR=	$(SRCROOTSL)libs/$(OARCH)$(SUBARCHDIR)$(SUBARCH)$(SHLDIR)
+OLIBSDIR_STATICR=	    libs/$(OARCH)$(SUBARCHDIR)$(SUBARCH)
 OLIBSDIR_STATIC=$(SRCROOTSL)libs/$(OARCH)$(SUBARCHDIR)$(SUBARCH)
+OINCSDIRR=		    incs/$(OARCH)
 OINCSDIR=	$(SRCROOTSL)incs/$(OARCH)
 
 ###########################################################################

@@ -1,8 +1,8 @@
-/* @(#)walk.h	1.35 18/10/29 Copyright 2004-2018 J. Schilling */
+/* @(#)walk.h	1.39 19/11/28 Copyright 2004-2019 J. Schilling */
 /*
  *	Definitions for directory tree walking
  *
- *	Copyright (c) 2004-2018 J. Schilling
+ *	Copyright (c) 2004-2019 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -25,6 +25,9 @@
 #include <schily/mconfig.h>
 #endif
 
+#ifndef _SCHILY_TYPES_H
+#include <schily/types.h>
+#endif
 #ifndef _SCHILY_STAT_H
 #include <schily/stat.h>
 #endif
@@ -73,6 +76,7 @@ extern "C" {
 /*
  * The 'type' argument to walkfun.
  */
+#define	WALK_NONE	0	/* Used when not called from treewalk()	*/
 #define	WALK_F		1	/* File	*/
 #define	WALK_SL		2	/* Symbolic Link */
 #define	WALK_D		3	/* Directory */
@@ -93,8 +97,8 @@ typedef	int	(*cbfun_t)	__PR((int ac, char  **argv));
 
 struct WALK {
 	int	flags;		/* Flags for communication with (*walkfun)() */
-	int	base;		/* Filename offset in path for  (*walkfun)() */
 	int	level;		/* The nesting level set up for (*walkfun)() */
+	size_t	base;		/* Filename offset in path for  (*walkfun)() */
 	int	walkflags;	/* treewalk() control flags		    */
 	void	*twprivate;	/* treewalk() private do not touch	    */
 	FILE	*std[3];	/* To redirect stdin/stdout/err in treewalk  */
@@ -122,6 +126,7 @@ struct WALK {
 #define	WALK_WF_NOCWD	8	/* walk() -> caller: cannot get working dir  */
 #define	WALK_WF_NOHOME	16	/* walk() -> caller: cannot chdir("..")	    */
 #define	WALK_WF_NOTDIR	32	/* walk() -> walk(): file is not a directory */
+#define	WALK_WF_ISLNK	64	/* walk() -> walk(): file is a symlink	    */
 
 #define	WALK_WF_CHOWN	4096	/* (*walkfun)(): changed st_uid or st_gid */
 #define	WALK_WF_CHMOD	8192	/* (*walkfun)(): changed st_mode */
@@ -138,6 +143,8 @@ extern	int	walkgethome	__PR((struct WALK *_state));
 extern	int	walkhome	__PR((struct WALK *_state));
 extern	int	walkcwd		__PR((struct WALK *_state));
 extern	int	walkclose	__PR((struct WALK *_state));
+extern	size_t	walknlen	__PR((struct WALK *_state));
+extern	void	walksname	__PR((char *_nm, struct WALK *_state));
 
 #ifdef	__cplusplus
 }

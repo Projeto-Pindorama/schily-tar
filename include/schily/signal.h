@@ -1,8 +1,8 @@
-/* @(#)signal.h	1.13 18/06/16 Copyright 1997-2018 J. Schilling */
+/* @(#)signal.h	1.16 21/07/15 Copyright 1997-2021 J. Schilling */
 /*
  *	Signal abstraction for signals
  *
- *	Copyright (c) 1997-2018 J. Schilling
+ *	Copyright (c) 1997-2021 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -42,6 +42,16 @@
 #endif
 
 /*
+ * z/OS does not provide the NSIG definition, so we #define it here
+ * based on the largest signal number we are aware of in 2021.
+ */
+#ifndef	NSIG
+#if	(defined(OS390) || defined(__MVS__)) && defined(SIGDUMP)
+#define	NSIG	(SIGDUMP+1)
+#endif
+#endif
+
+/*
  * Very old Solaris versions (probably only before 1993) did not include
  * siginfo.h in sginal.h. POSIX requires the availaibility of siginfo_t
  * from signal.h, so include siginfo.h if available on this platform.
@@ -69,6 +79,10 @@
 #include <schily/times.h>
 #endif
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 typedef struct {
 	int	si_code;	/* Child status code */
 	pid_t	si_pid;		/* Child pid */
@@ -79,6 +93,10 @@ typedef struct {
 
 #ifndef	id_t
 #define	id_t	pid_t
+#endif
+
+#ifdef	__cplusplus
+}
 #endif
 
 #endif	/* !defined(HAVE_TYPE_SIGINFO_T) && !defined(HAVE_SIGINFO_T) */

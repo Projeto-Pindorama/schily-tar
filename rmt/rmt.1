@@ -1,5 +1,5 @@
-. \" @(#)rmt.1	1.17 18/06/09 Copyr 1994-2018 J. Schilling
-. \"  Manual Seite fuer rmt
+. \" @(#)rmt.1	1.19 20/09/04 Copyright 1994-2020 J. Schilling
+. \"  Manual page for rmt
 . \"
 .if t .ds a \v'-0.55m'\h'0.00n'\z.\h'0.40n'\z.\v'0.55m'\h'-0.40n'a
 .if t .ds o \v'-0.55m'\h'0.00n'\z.\h'0.45n'\z.\v'0.55m'\h'-0.45n'o
@@ -13,7 +13,7 @@
 .if n .ds o oe
 .if n .ds u ue
 .if n .ds s sz
-.TH RMT 1 "2018/06/09" "J\*org Schilling" "Schily\'s USER COMMANDS"
+.TH RMT 1 "2022/09/09" "J\*org Schilling" "Schily\'s USER COMMANDS"
 .SH NAME
 rmt \- remote magnetic tape protocol server
 .SH SYNOPSIS
@@ -146,11 +146,11 @@ If the
 is send to the server, the numeric
 .B mode
 is ignored.
-The symbolic notation allows to send the expected open mode over
+The symbolic notation allows one to send the expected open mode over
 the wire, using a system independent method.
 This is needed because different operating systems usually define all
 bits in a different way. An exception are the lowest two bits.
-The lowest two bits allow to code 
+The lowest two bits allow one to code 
 .IR O_RDONLY , O_WRONLY " and " O_RDWR .
 To prevent unexpected behavior, 
 .B rmt
@@ -159,7 +159,7 @@ masks the numeric open mode with
 before using it as argument to the 
 .BR open (2)
 call.
-If you need more bits in the second parameter ot
+If you need more bits in the second parameter to
 .BR open (2),
 you need to use the symbolic mode.
 .sp
@@ -256,12 +256,12 @@ Mapped to
 3
 Mapped to 
 .B SEEK_DATA
-If avalable on the remote system.
+If available on the remote system.
 .TP
 4
 Mapped to 
 .B SEEK_HOLE
-If avalable on the remote system.
+If available on the remote system.
 .RE
 .br
 .ne 7
@@ -559,7 +559,7 @@ to exit.
 /etc/default/rmt
 The file
 .B /etc/default/rmt
-allows to set up rules to limit the accessibility of files based on rules.
+allows one to set up rules to limit the accessibility of files based on rules.
 This feature is typically used when the rmt run from a non personal but
 task specific login.
 .sp
@@ -688,7 +688,7 @@ Other
 implementations allow no more than 64 bytes.
 .LP
 The possibility to create a debug file by calling
-.BI rmt " file
+.BI rmt " file"
 has been disabled for security reasons.
 If you like to debug
 .B rmt
@@ -722,16 +722,29 @@ line need to be separated by a TAB character.
 Be very careful when designing patterns to match path names that may
 be accepted for 
 .IR open .
-If a pattern would allow to include
+If a pattern would allow inclusion of
 .I /../
 in the path,
 a possible intruder could virtually access any path on your system.
 For this reason, 
 .I /../
 is not allowed to appear in a path regardless of the pattern.
+
 .SH BUGS
-.LP
-None known.
+.PP
+None currently known.
+.PP
+Mail bugs and suggestions to
+.B schilytools@mlists.in-berlin.de
+or open a ticket at
+.BR https://codeberg.org/schilytools/schilytools/issues .
+.PP
+The mailing list archive may be found at:
+.PP
+.nf
+.BR https://mlists.in-berlin.de/mailman/listinfo/schilytools-mlists.in-berlin.de .
+.fi
+
 .SH HISTORY
 .LP
 The 
@@ -754,21 +767,23 @@ and a mapping to work around the non-standard Linux
 .B mtio
 opcodes in the range 0..7 has been added.
 .B rmt
-is still maintained by J\*org Schilling.
+is now maintained by the schilytools project authors.
 .LP
 
-.SH AUTHOR
-.nf
-J\*org Schilling
-Seestr. 110
-D-13353 Berlin
-Germany
-.fi
-.PP
-Mail bugs and suggestions to:
-.PP
-.B
-joerg.schilling@fokus.fraunhofer.de
-or
-.B
-joerg@schily.net
+.SH AUTHORS
+J\*org Schilling and the schilytools project authors.
+
+.SH "SOURCE DOWNLOAD"
+The source code for
+.B rmt
+is included in the
+.B schilytools
+project and may be retrieved from the
+.B schilytools
+project at Codeberg at
+.LP
+.BR https://codeberg.org/schilytools/schilytools .
+.LP
+The download directory is
+.LP
+.BR https://codeberg.org/schilytools/schilytools/releases .

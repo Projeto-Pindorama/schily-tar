@@ -1,10 +1,10 @@
-/* @(#)resource.h	1.11 15/08/14 Copyright 1995-2015 J. Schilling */
+/* @(#)resource.h	1.15 21/07/23 Copyright 1995-2021 J. Schilling */
 /*
  *	Abstraction from resource limits
  *
  *	Missing parts for wait3() taken from SunOS
  *
- *	Copyright (c) 1995-2015 J. Schilling
+ *	Copyright (c) 1995-2021 J. Schilling
  */
 /*
  * The contents of this file are subject to the terms of the
@@ -27,6 +27,10 @@
 #include <schily/mconfig.h>
 #endif
 
+#ifndef	_SCHILY_STDINT_H
+#include <schily/stdint.h>	/* May be needed for rlim_t */
+#endif
+
 #ifndef	_SCHILY_TIME_H
 #include <schily/time.h>
 #endif
@@ -40,6 +44,26 @@
 #define	_INCL_SYS_RESOURCE_H
 #endif
 #endif
+
+#if	defined(OS390) || defined(__MVS__)
+
+#ifdef	__never__			/* Compilation fail		*/
+#ifdef	HAVE_SYS_DBX_PLUGIN_H		/* with suseconds_t redefined	*/
+#ifndef	_INCL_SYS_DBX_PLUGIN_H
+#include <sys/dbx_plugin.h>		/* Needed for RLIM_NLIMITS on z/OS */
+#define	_INCL_SYS_DBX_PLUGIN_H
+#endif
+#endif
+#endif	/* __never__ */
+
+#if	defined(RLIMIT_MEMLIMIT) && !defined(RLIM_NLIMITS)
+#define	RLIM_NLIMITS	(RLIMIT_MEMLIMIT+1)
+#endif
+#if	!defined(RLIM_NLIMITS)
+#define	RLIM_NLIMITS	8
+#endif
+
+#endif	/* defined(OS390) || defined(__MVS__) */
 
 #ifdef	__cplusplus
 extern "C" {
@@ -92,6 +116,10 @@ struct	rusage {
 };
 #endif	/* HAVE_STRUCT_RUSAGE */
 
+#ifndef	HAVE_TYPE_RLIM_T
+#define	rlim_t	Intmax_t
+#endif
+
 #ifndef	RLIMIT_CPU
 /*
  * Resource limits
@@ -107,10 +135,6 @@ struct	rusage {
 
 #ifndef	RLIM_INFINITY
 #define	RLIM_INFINITY	0x7fffffff
-#endif
-
-#ifndef	HAVE_TYPE_RLIM_T
-#define	rlim_t	Intmax_t
 #endif
 
 struct rlimit {

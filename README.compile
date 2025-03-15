@@ -1,4 +1,4 @@
-# @(#)README.compile	1.40 18/09/17 Copyright 1997-2018 J. Schilling
+# @(#)README.compile	1.48 21/05/23 Copyright 1997-2021 J. Schilling
 
 Short overview for those who don't read manuals:
 
@@ -19,7 +19,7 @@ Short overview for those who don't read manuals:
 	*****
 
 
-	***** If this does not work for you, read the rest if this file   *****
+	***** If this does not work for you, read the rest of this file   *****
 	***** If you have any problem, also first read the topic specific *****
 	***** README.* files (e.g. README.linux for Linux problems).	  *****
 
@@ -27,17 +27,14 @@ Short overview for those who don't read manuals:
 	OBJ/<arch-name>/ in the current projects leaf directory.
 
 	You **need** either the Schily "smake" program, the SunPRO make
-	that is included in "schilytools" and typically installed in
-	/opt/schily/bin/make and /opt/schily/bin/dmake, the SunPRO make
+	(both of which are included in "schilytools") the SunPRO make
 	from /usr/bin/make (SunOS 4.x) or /usr/ccs/bin/make (SunOS 5.x)
 	or GNU make to compile this program. Read READMEs/README.gmake for 
 	more information on gmake and a list of the most annoying bugs in gmake.
 
 	All other make programs are either not smart enough or have bugs.
 
-	My "smake" source is at:
-
-	https://sourceforge.net/projects/s-make/files/
+	My "smake" source is found in the smake directory.
 
 	It is easy to compile and doesn't need a working make program
 	on your machine. If you don't have a working "make" program on the
@@ -52,7 +49,7 @@ Short overview for those who don't read manuals:
 		4)	GNU make		(this is the last resort)
 
 	Important notice: "smake" that comes with SGI/IRIX will not work!!!
-	This is not the Schily "smake" but a dumb make program from SGI.
+	This is not the Schily "smake" but rather a dumb make program from SGI.
 
 	***** If you are on a platform that is not yet known by the	 *****
 	***** Schily makefilesystem you cannot use GNU make.		 *****
@@ -60,7 +57,9 @@ Short overview for those who don't read manuals:
 
 	Note that GNU make has major bugs on various platforms and thus cannot
 	be used at all on VMS and OS/2. GNU make on Cygwin causes problems
-	because it does not deal with spaces and newlines correctly.
+	because it does not deal with spaces and newlines correctly. Given that
+	GNU make did not fix accepted bugs reported more than 20 years ago,
+	GNU make is not recommended.
 
 	Please read the README's for your operating system too.
 
@@ -160,8 +159,17 @@ How to compile:
 
 	On sub directories, "-f SMakefile" is neither needed nor useful.
 
-	Add other command line options or command line parameter if needed.
+	Add other command line options or command line parameters if needed.
 
+How to compile with fully visible commands:
+
+	Call:
+
+		smake NOECHO=
+
+	and the @ in front of rule commands will be replaced by the empty
+	string. This causes the make program to print commands before
+	executing them to help debugging.
 
 How to compile in parallel mode:
 
@@ -184,6 +192,21 @@ How to compile in parallel mode:
 	confused by the mixture of the output. Recent gmake versions added
 	an option to separate the output from various jobs. Have a look
 	at the man page.
+
+
+How to run unit tests:
+
+	First call "smake" or "dmake" to compile everything and then run:
+
+		smake tests
+
+	at the top level directory or in any project sub-directory that
+	implements unit tests.
+
+	If you like to avoid the expensive random tests for programs like
+	"patch" or "sccs", you may disable the random tests by calling:
+
+		NO_RANDOM=TRUE smake tests
 
 
 How to install results:
@@ -222,21 +245,24 @@ Using a different installation directory:
 	DEFAULTS files. If you like to install everything in the deprecated path
 	/usr/local, the next paragraph describes the procedure.
 
-	If your make program supports to propagate make macros to sub make programs
-	which is the case for recent smake releases as well as for a recent gnumake:
+	If your make program supports to propagate make macros to sub make 
+	programs which is the case for recent smake releases as well as for a
+	recent gnumake or a recent SunPro Make from the schilytools:
 
 		smake INS_BASE=/usr/local install
 	or
 		gmake INS_BASE=/usr/local install
 
-	If your make program doesn't propagate make macros (e.g. SunPRO make),
-	call:
+	If your make program doesn't propagate make macros (e.g. the
+	unmaintained SunPRO make variant from Sun/Oracle), call:
 
 		env INS_BASE=/usr/local make -e install
 
 	Note that INS_BASE=/usr/local needs to be specified for every operation
 	that compiles or links programs, as the path may be stored inside the
-	binaries.
+	binaries. It is not sufficient to use INS_BASE=x for a "make install".
+	If you by mistake did already compile, call "make clean" before using
+	INS_BASE=x for compiling.
 
 	The location for the root specific configuratin files is controlled
 	via the INS_RBASE= make macro. The default vaulue for this macro is "/".
@@ -267,7 +293,7 @@ Setting up a different Link mode:
 				use with "gprof" (introduced by BSD in the
 				late 1970s).
 
-	The makefile system sets up a default linkmode in the patform
+	The makefile system sets up a default linkmode in the platform
 	related defaults file (typically in the file DEFAULTS/Defaults.<platform>)
 	in the projects root directory. This is done with the entry:
 
@@ -634,7 +660,7 @@ Compiling in a cross compilation environment:
 	runrmt_android		runs the commands remove via the debug bridge
 
 	If you need to remotely run programs on a system that is not
-	supported by one of there three scripts, you need to modify one
+	supported by one of the three scripts, you need to modify one
 	of them to match your needs.
 
 	To enable Cross Compilation use the following environment variables:
@@ -696,7 +722,7 @@ Compiling in a cross compilation environment:
 
 	ARCH=			overwrites M_ARCH and P_ARCH
 
-	It is usually suffucient to set ARCH and OSNAME.
+	It is usually sufficient to set ARCH and OSNAME.
 
 	In order to use a cross compiler environment instead of a native compiler,
 	set the make macro CC_COM or CC to something different than "cc".
@@ -730,7 +756,7 @@ Compiling in a cross compilation environment:
 
 Compiling with the address sanitizer:
 
-	Be careful with a compiler enhancement called "addess sanitizer".
+	Be careful with a compiler enhancement called "address sanitizer".
 
 	First a note: the address sanitizer needs a lot of memory when in
 	64-bit mode. For this reason, it is recommended to run the tests
@@ -752,7 +778,7 @@ Compiling with the address sanitizer:
 	in the top level source directory. This makes the source tree to behave
 	as if if was recently unpacked from the tar archive.
 
-	Then run run e.g.:
+	Then run e.g.:
 
 		cd inc/
 		smake CCOM=gcc32
@@ -771,7 +797,7 @@ Compiling with the address sanitizer:
 
 		ASAN_OPTIONS=allow_user_segv_handler=true
 
-	As a redult, the command line to compile the code after the
+	As a result, the command line to compile the code after the
 	auto-configuration has been done as mentioned above is:
 
 	ASAN_OPTIONS=allow_user_segv_handler=true smake CCOM=gcc32 COPTX="-g -O0 -fsanitize=address" LDOPTX="-g -fsanitize=address" 
@@ -805,16 +831,19 @@ Compiling with the "Americal fuzzy lop":
 	Follow the instruction from above for the address sanitizer, but
 	use this command line to call the compiler:
 
-	ASAN_OPTIONS=allow_user_segv_handler=true AFL_HARDEN=1 AFL_USE_ASAN=1 smake CC=afl-gcc CCOM=gcc32
+	ASAN_OPTIONS=allow_user_segv_handler=true AFL_HARDEN=1 AFL_USE_ASAN=1 smake CC=afl-gcc CCC=afl-g++ CCOM=gcc32
+
+	or, if using clang:
+
+	ASAN_OPTIONS=allow_user_segv_handler=true AFL_HARDEN=1 AFL_USE_ASAN=1 smake CC=afl-clang-fast CCC=afl-clang-fast++ CCOM=clang32
 
 
 Author:
 
 Joerg Schilling
-Seestr. 110
 D-13353 Berlin
 Germany
 
-Email: 	joerg.schilling@fokus.fraunhofer.de, joerg@schily.net
+Email: 	joerg@schily.net
 
 Please mail bugs and suggestions to me.

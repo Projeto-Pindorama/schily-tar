@@ -1,6 +1,6 @@
-#ident "@(#)i386-freebsd-gcc.rul	1.9 18/04/11 "
+#ident "@(#)i386-freebsd-gcc.rul	1.12 21/05/27 "
 ###########################################################################
-# Written 1997-2018 by J. Schilling
+# Written 1997-2019 by J. Schilling
 ###########################################################################
 #
 # Platform dependent MACROS for FreeBSD
@@ -22,7 +22,7 @@
 ###########################################################################
 include $(SRCROOT)/$(RULESDIR)/rules.prg
 ###########################################################################
-include $(SRCROOT)/$(RULESDIR)/cc-gcc.rul
+include $(SRCROOT)/$(RULESDIR)/cc-$(C_ARCH).rul
 
 OSDEFS +=
 
@@ -36,6 +36,23 @@ LIB_SOCKET=
 LIB_MATH=	-lm
 LIB_KVM=	
 
-LDOPTS=		$(LIBS_PATH) $(LDPATH)
+#LDOPTS=		$(LIBS_PATH) $(LDPATH)
 
-RANLIB=		@echo "	==> RANDOMIZING ARCHIVE \"$@\""; ranlib
+#
+# Sunpro C/C++ run on Solaris and Linux and both have linkers
+# that support mapfiles
+#
+MAPVERS=	$(_MAPVERS) # This enables to use mapfiles
+#
+# The GNU linker is buggy and does not like the official order in linker map
+# files for symbol versioning. The following command reverses the order of
+# the version names in the linker map file.
+#
+MAPFILE_POST=	| sed 's/^SCHILY/+SCHILY/' | tr '\012' '@' | tr '+' '\012' | tail -r |  tr '@' '\012'
+
+#LDOPTS=		$(LIBS_PATH) $(LDPATH) $(RUNPATH:-R%=-Wl,-R%)
+#LDOPTS=		$(LIBS_PATH) $(LDPATH)
+LDOPTMAP=	$(PMAPVERS:%=-Wl,--version-script=%)
+LDOPTDYN=	-shared -Wl,-soname,$(TARGET) $(LDOPTMAP)
+
+RANLIB=		$(NOECHO)echo "	==> RANDOMIZING ARCHIVE \"$@\""; ranlib
